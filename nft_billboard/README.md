@@ -8,7 +8,7 @@
 
 项目包含四个主要合约模块：
 
-1. **billboard_nft.move** - 主合约模块，包含系统初始化和核心功能
+1. **nft_billboard.move** - 主合约模块，包含系统初始化和核心功能
 2. **factory.move** - 工厂合约，负责权限管理和广告位创建
 3. **ad_space.move** - 广告位相关功能，包括创建和管理广告位
 4. **nft.move** - NFT相关功能，包括NFT铸造、内容更新和租约管理
@@ -65,7 +65,7 @@ public struct AdBoardNFT has key, store {
 ### 1. 系统初始化
 
 ```move
-fun init(_: BILLBOARD_NFT, ctx: &mut TxContext)
+fun init(_: NFT_BILLBOARD, ctx: &mut TxContext)
 ```
 
 初始化系统，创建工厂合约，设置平台管理员和系统参数。

@@ -76,6 +76,6 @@ NFT Billboard是一个革命性的区块链广告解决方案，将虚拟世界�
 
 
 ## 联系方式
-- GitHub：https://github.com/cuidaquan/sui-billboard-nft
+- GitHub：https://github.com/cuidaquan/nft-billboard
 - 项目网站：https://nftbillboard.io
 

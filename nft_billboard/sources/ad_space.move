@@ -1,4 +1,4 @@
-module sui_billboard_nft::ad_space {
+module nft_billboard::ad_space {
     use std::string::{Self, String};
     use sui::object::{Self, UID, ID};
     use sui::tx_context::{Self, TxContext};

@@ -680,7 +680,7 @@ export async function getNFTDetails(nftId: string): Promise<BillboardNFT | null>
 
     // 支持多种可能的类型名称
     const isNftType = typeStr.includes(`${CONTRACT_CONFIG.PACKAGE_ID}::nft::AdBoardNFT`) ||
-                      typeStr.includes(`${CONTRACT_CONFIG.PACKAGE_ID}::billboard_nft::AdBoardNFT`) ||
+                      typeStr.includes(`${CONTRACT_CONFIG.PACKAGE_ID}::nft_billboard::AdBoardNFT`) ||
                       typeStr.includes(`::nft::AdBoardNFT`);
 
     console.log(`[${requestId}] NFT类型检查结果:`, isNftType ? "✓" : "✗");

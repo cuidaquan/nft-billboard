@@ -1,4 +1,4 @@
-module sui_billboard_nft::nft {
+module nft_billboard::nft {
     use std::string::{String, utf8};
     use std::option::{Self, Option, some, none};
     use sui::object::{Self, UID, ID};
@@ -9,7 +9,7 @@ module sui_billboard_nft::nft {
     use sui::display;
     use sui::package;
 
-    use sui_billboard_nft::ad_space::AdSpace;
+    use nft_billboard::ad_space::AdSpace;
 
     // 一次性见证类型 - 添加public可见性
     public struct NFT has drop {}

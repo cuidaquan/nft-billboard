@@ -1,5 +1,5 @@
 #[test_only]
-module sui_billboard_nft::billboard_nft_tests {
+module nft_billboard::nft_billboard_tests {
     use sui::test_scenario::{Self as ts, Scenario};
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
@@ -9,10 +9,10 @@ module sui_billboard_nft::billboard_nft_tests {
     use std::vector;
     
     // 导入特殊的one_time_witness模块，用于测试使用
-    use sui_billboard_nft::billboard_nft;
-    use sui_billboard_nft::factory::{Self, Factory};
-    use sui_billboard_nft::ad_space::{Self, AdSpace};
-    use sui_billboard_nft::nft::{Self, AdBoardNFT};
+    use nft_billboard::nft_billboard;
+    use nft_billboard::factory::{Self, Factory};
+    use nft_billboard::ad_space::{Self, AdSpace};
+    use nft_billboard::nft::{Self, AdBoardNFT};
 
     // 测试账户
     const ADMIN: address = @0xA;
@@ -25,7 +25,7 @@ module sui_billboard_nft::billboard_nft_tests {
     const TEST_PAYMENT: u64 = 50_000_000_000; // 50 SUI
 
     // Billboard NFT的one-time witness类型
-    public struct BILLBOARD_NFT has drop {}
+    public struct NFT_BILLBOARD has drop {}
 
     // 初始化函数
     fun init_test(): Scenario {
@@ -65,7 +65,7 @@ module sui_billboard_nft::billboard_nft_tests {
         ts::next_tx(&mut scenario, ADMIN);
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
-            billboard_nft::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
+            nft_billboard::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
             ts::return_shared(factory);
         };
         
@@ -88,7 +88,7 @@ module sui_billboard_nft::billboard_nft_tests {
         ts::next_tx(&mut scenario, ADMIN);
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
-            billboard_nft::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
+            nft_billboard::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
             ts::return_shared(factory);
         };
         
@@ -100,7 +100,7 @@ module sui_billboard_nft::billboard_nft_tests {
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
             
-            billboard_nft::create_ad_space(
+            nft_billboard::create_ad_space(
                 &mut factory,
                 string::utf8(b"Game123"),
                 string::utf8(b"Lobby"),
@@ -134,7 +134,7 @@ module sui_billboard_nft::billboard_nft_tests {
         ts::next_tx(&mut scenario, ADMIN);
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
-            billboard_nft::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
+            nft_billboard::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
             ts::return_shared(factory);
         };
         
@@ -146,7 +146,7 @@ module sui_billboard_nft::billboard_nft_tests {
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
             
-            billboard_nft::create_ad_space(
+            nft_billboard::create_ad_space(
                 &mut factory,
                 string::utf8(b"Game123"),
                 string::utf8(b"Lobby"),
@@ -173,7 +173,7 @@ module sui_billboard_nft::billboard_nft_tests {
             let mut ad_space = ts::take_shared<AdSpace>(&scenario);
             let payment = ts::take_from_sender<Coin<SUI>>(&scenario);
             
-            billboard_nft::purchase_ad_space(
+            nft_billboard::purchase_ad_space(
                 &mut factory,
                 &mut ad_space,
                 payment,
@@ -211,7 +211,7 @@ module sui_billboard_nft::billboard_nft_tests {
         ts::next_tx(&mut scenario, ADMIN);
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
-            billboard_nft::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
+            nft_billboard::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
             ts::return_shared(factory);
         };
         
@@ -223,7 +223,7 @@ module sui_billboard_nft::billboard_nft_tests {
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
             
-            billboard_nft::create_ad_space(
+            nft_billboard::create_ad_space(
                 &mut factory,
                 string::utf8(b"Game123"),
                 string::utf8(b"Lobby"),
@@ -250,7 +250,7 @@ module sui_billboard_nft::billboard_nft_tests {
             let mut ad_space = ts::take_shared<AdSpace>(&scenario);
             let payment = ts::take_from_sender<Coin<SUI>>(&scenario);
             
-            billboard_nft::purchase_ad_space(
+            nft_billboard::purchase_ad_space(
                 &mut factory,
                 &mut ad_space,
                 payment,
@@ -274,7 +274,7 @@ module sui_billboard_nft::billboard_nft_tests {
         {
             let mut nft = ts::take_from_sender<AdBoardNFT>(&scenario);
             
-            billboard_nft::update_ad_content(
+            nft_billboard::update_ad_content(
                 &mut nft,
                 string::utf8(b"https://example.com/new_ad.jpg"),
                 vector::empty<u8>(), // 空的blob_id，表示没有使用Walrus
@@ -300,7 +300,7 @@ module sui_billboard_nft::billboard_nft_tests {
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
             
-            billboard_nft::update_platform_ratio(
+            nft_billboard::update_platform_ratio(
                 &mut factory,
                 20, // 更新为20%
                 ts::ctx(&mut scenario)
@@ -328,7 +328,7 @@ module sui_billboard_nft::billboard_nft_tests {
         ts::next_tx(&mut scenario, ADMIN);
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
-            billboard_nft::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
+            nft_billboard::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
             ts::return_shared(factory);
         };
         
@@ -340,7 +340,7 @@ module sui_billboard_nft::billboard_nft_tests {
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
             
-            billboard_nft::create_ad_space(
+            nft_billboard::create_ad_space(
                 &mut factory,
                 string::utf8(b"Game123"),
                 string::utf8(b"Lobby"),
@@ -358,7 +358,7 @@ module sui_billboard_nft::billboard_nft_tests {
         {
             let mut ad_space = ts::take_shared<AdSpace>(&scenario);
             
-            billboard_nft::update_ad_space_price(
+            nft_billboard::update_ad_space_price(
                 &mut ad_space,
                 DAILY_PRICE * 2, // 翻倍价格
                 ts::ctx(&mut scenario)
@@ -388,7 +388,7 @@ module sui_billboard_nft::billboard_nft_tests {
         ts::next_tx(&mut scenario, ADMIN);
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
-            billboard_nft::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
+            nft_billboard::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
             ts::return_shared(factory);
         };
         
@@ -404,7 +404,7 @@ module sui_billboard_nft::billboard_nft_tests {
         ts::next_tx(&mut scenario, ADMIN);
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
-            billboard_nft::remove_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
+            nft_billboard::remove_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
             ts::return_shared(factory);
         };
         
@@ -420,7 +420,7 @@ module sui_billboard_nft::billboard_nft_tests {
     }
     
     #[test]
-    #[expected_failure(abort_code = sui_billboard_nft::factory::EGameDevNotFound)]
+    #[expected_failure(abort_code = factory::EGameDevNotFound)]
     fun test_remove_nonexistent_game_dev() {
         let mut scenario = init_test();
         
@@ -428,7 +428,7 @@ module sui_billboard_nft::billboard_nft_tests {
         ts::next_tx(&mut scenario, ADMIN);
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
-            billboard_nft::remove_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
+            nft_billboard::remove_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
             ts::return_shared(factory);
         };
         
@@ -436,7 +436,7 @@ module sui_billboard_nft::billboard_nft_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = billboard_nft::ENotAdmin)]
+    #[expected_failure(abort_code = nft_billboard::ENotAdmin)]
     fun test_remove_game_dev_not_admin() {
         let mut scenario = init_test();
         
@@ -444,7 +444,7 @@ module sui_billboard_nft::billboard_nft_tests {
         ts::next_tx(&mut scenario, ADMIN);
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
-            billboard_nft::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
+            nft_billboard::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
             ts::return_shared(factory);
         };
         
@@ -452,7 +452,7 @@ module sui_billboard_nft::billboard_nft_tests {
         ts::next_tx(&mut scenario, GAME_DEV);
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
-            billboard_nft::remove_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
+            nft_billboard::remove_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
             ts::return_shared(factory);
         };
         
@@ -467,7 +467,7 @@ module sui_billboard_nft::billboard_nft_tests {
         ts::next_tx(&mut scenario, ADMIN);
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
-            billboard_nft::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
+            nft_billboard::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
             ts::return_shared(factory);
         };
         
@@ -479,7 +479,7 @@ module sui_billboard_nft::billboard_nft_tests {
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
             
-            billboard_nft::create_ad_space(
+            nft_billboard::create_ad_space(
                 &mut factory,
                 string::utf8(b"Game123"),
                 string::utf8(b"Lobby"),
@@ -506,7 +506,7 @@ module sui_billboard_nft::billboard_nft_tests {
             let mut ad_space = ts::take_shared<AdSpace>(&scenario);
             let payment = ts::take_from_sender<Coin<SUI>>(&scenario);
             
-            billboard_nft::purchase_ad_space(
+            nft_billboard::purchase_ad_space(
                 &mut factory,
                 &mut ad_space,
                 payment,
@@ -539,7 +539,7 @@ module sui_billboard_nft::billboard_nft_tests {
             let mut nft = ts::take_from_sender<AdBoardNFT>(&scenario);
             let payment = ts::take_from_sender<Coin<SUI>>(&scenario);
             
-            billboard_nft::renew_lease(
+            nft_billboard::renew_lease(
                 &mut factory,
                 &mut ad_space,
                 &mut nft,
@@ -575,7 +575,7 @@ module sui_billboard_nft::billboard_nft_tests {
         ts::next_tx(&mut scenario, ADMIN);
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
-            billboard_nft::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
+            nft_billboard::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
             ts::return_shared(factory);
         };
         
@@ -587,7 +587,7 @@ module sui_billboard_nft::billboard_nft_tests {
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
             
-            billboard_nft::create_ad_space(
+            nft_billboard::create_ad_space(
                 &mut factory,
                 string::utf8(b"Game123"),
                 string::utf8(b"Lobby"),
@@ -614,7 +614,7 @@ module sui_billboard_nft::billboard_nft_tests {
             let mut factory = ts::take_shared<Factory>(&scenario);
             let ad_space = ts::take_shared<AdSpace>(&scenario);
             
-            billboard_nft::delete_ad_space(
+            nft_billboard::delete_ad_space(
                 &mut factory,
                 ad_space,
                 ts::ctx(&mut scenario)
@@ -635,7 +635,7 @@ module sui_billboard_nft::billboard_nft_tests {
     }
     
     #[test]
-    #[expected_failure(abort_code = billboard_nft::ENotAdSpaceCreator)]
+    #[expected_failure(abort_code = nft_billboard::ENotAdSpaceCreator)]
     fun test_delete_ad_space_not_creator() {
         let mut scenario = init_test();
         
@@ -643,7 +643,7 @@ module sui_billboard_nft::billboard_nft_tests {
         ts::next_tx(&mut scenario, ADMIN);
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
-            billboard_nft::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
+            nft_billboard::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
             ts::return_shared(factory);
         };
         
@@ -655,7 +655,7 @@ module sui_billboard_nft::billboard_nft_tests {
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
             
-            billboard_nft::create_ad_space(
+            nft_billboard::create_ad_space(
                 &mut factory,
                 string::utf8(b"Game123"),
                 string::utf8(b"Lobby"),
@@ -675,7 +675,7 @@ module sui_billboard_nft::billboard_nft_tests {
             let ad_space = ts::take_shared<AdSpace>(&scenario);
             
             // 这里会失败并中止测试，所以不需要返回对象
-            billboard_nft::delete_ad_space(
+            nft_billboard::delete_ad_space(
                 &mut factory,
                 ad_space,
                 ts::ctx(&mut scenario)
@@ -699,7 +699,7 @@ module sui_billboard_nft::billboard_nft_tests {
         ts::next_tx(&mut scenario, ADMIN);
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
-            billboard_nft::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
+            nft_billboard::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
             ts::return_shared(factory);
         };
         
@@ -711,7 +711,7 @@ module sui_billboard_nft::billboard_nft_tests {
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
             
-            billboard_nft::create_ad_space(
+            nft_billboard::create_ad_space(
                 &mut factory,
                 string::utf8(b"Game123"),
                 string::utf8(b"Lobby"),
@@ -729,7 +729,7 @@ module sui_billboard_nft::billboard_nft_tests {
         {
             let mut ad_space = ts::take_shared<AdSpace>(&scenario);
             
-            billboard_nft::update_ad_space_price(
+            nft_billboard::update_ad_space_price(
                 &mut ad_space,
                 DAILY_PRICE * 3, // 更新为三倍价格
                 ts::ctx(&mut scenario)
@@ -752,7 +752,7 @@ module sui_billboard_nft::billboard_nft_tests {
             let mut factory = ts::take_shared<Factory>(&scenario);
             let ad_space = ts::take_shared<AdSpace>(&scenario);
             
-            billboard_nft::delete_ad_space(
+            nft_billboard::delete_ad_space(
                 &mut factory,
                 ad_space,
                 ts::ctx(&mut scenario)
@@ -773,7 +773,7 @@ module sui_billboard_nft::billboard_nft_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = billboard_nft::ENftExpired)]
+    #[expected_failure(abort_code = nft_billboard::ENftExpired)]
     fun test_renew_expired_lease() {
         let mut scenario = init_test();
         
@@ -781,7 +781,7 @@ module sui_billboard_nft::billboard_nft_tests {
         ts::next_tx(&mut scenario, ADMIN);
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
-            billboard_nft::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
+            nft_billboard::register_game_dev(&mut factory, GAME_DEV, ts::ctx(&mut scenario));
             ts::return_shared(factory);
         };
         
@@ -793,7 +793,7 @@ module sui_billboard_nft::billboard_nft_tests {
         {
             let mut factory = ts::take_shared<Factory>(&scenario);
             
-            billboard_nft::create_ad_space(
+            nft_billboard::create_ad_space(
                 &mut factory,
                 string::utf8(b"Game123"),
                 string::utf8(b"Lobby"),
@@ -820,7 +820,7 @@ module sui_billboard_nft::billboard_nft_tests {
             let mut ad_space = ts::take_shared<AdSpace>(&scenario);
             let payment = ts::take_from_sender<Coin<SUI>>(&scenario);
             
-            billboard_nft::purchase_ad_space(
+            nft_billboard::purchase_ad_space(
                 &mut factory,
                 &mut ad_space,
                 payment,
@@ -852,7 +852,7 @@ module sui_billboard_nft::billboard_nft_tests {
             let payment = ts::take_from_sender<Coin<SUI>>(&scenario);
             
             // 这个调用应该失败，因为NFT已过期
-            billboard_nft::renew_lease(
+            nft_billboard::renew_lease(
                 &mut factory,
                 &mut ad_space,
                 &mut nft,

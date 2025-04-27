@@ -26,12 +26,12 @@ NFT Billboard是一个革命性的区块链广告解决方案，将虚拟世界�
 ## 目录结构
 
 ```
-sui-billboard-nft/
+nft-billboard/
 ├── README.md                # 项目说明文档
-├── sui_billboard_nft/       # Move智能合约目录
+├── nft_billboard/       # Move智能合约目录
 │   ├── sources/             # 合约源码
 │   │   ├── ad_space.move    # 广告位相关功能
-│   │   ├── billboard_nft.move # 主合约模块
+│   │   ├── nft_billboard.move # 主合约模块
 │   │   ├── factory.move     # 工厂合约
 │   │   └── nft.move         # NFT相关功能
 │   ├── tests/               # 合约测试
@@ -87,7 +87,7 @@ sui-billboard-nft/
 
 ```bash
 # 进入合约目录
-cd sui_billboard_nft
+cd nft_billboard
 
 # 编译合约
 sui move build

@@ -1,4 +1,4 @@
-module sui_billboard_nft::billboard_nft {
+module nft_billboard::nft_billboard {
     use sui::object::UID;
     use sui::tx_context::{Self, TxContext};
     use sui::transfer;
@@ -9,9 +9,9 @@ module sui_billboard_nft::billboard_nft {
     use std::string::{Self, String};
     use std::option::{Self, Option};
     
-    use sui_billboard_nft::ad_space::{Self, AdSpace};
-    use sui_billboard_nft::nft;
-    use sui_billboard_nft::factory::{Self, Factory};
+    use nft_billboard::ad_space::{Self, AdSpace};
+    use nft_billboard::nft;
+    use nft_billboard::factory::{Self, Factory};
 
     // 错误码
     const EAdSpaceNotAvailable: u64 = 4;
@@ -22,7 +22,7 @@ module sui_billboard_nft::billboard_nft {
     const ENftExpired: u64 = 12; // NFT已过期
 
     // 一次性见证类型
-    public struct BILLBOARD_NFT has drop {}
+    public struct NFT_BILLBOARD has drop {}
 
     // 事件
     public struct SystemInitialized has copy, drop {
@@ -53,7 +53,7 @@ module sui_billboard_nft::billboard_nft {
     }
 
     // 初始化函数
-    fun init(_witness: BILLBOARD_NFT, ctx: &mut TxContext) {
+    fun init(_witness: NFT_BILLBOARD, ctx: &mut TxContext) {
         // 初始化工厂
         factory::init_factory(ctx);
 

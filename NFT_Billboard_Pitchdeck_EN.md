@@ -74,5 +74,5 @@ NFT Billboard is a revolutionary blockchain advertising solution that transforms
 - Promote SUI token circulation and usage
 
 ## Contact Information
-- GitHub: https://github.com/cuidaquan/sui-billboard-nft
+- GitHub: https://github.com/cuidaquan/nft-billboard
 - Project website: https://nftbillboard.io

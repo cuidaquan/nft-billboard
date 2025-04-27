@@ -1,4 +1,4 @@
-module sui_billboard_nft::factory {
+module nft_billboard::factory {
     use sui::object::{UID, ID};
     use sui::tx_context::TxContext;
     use sui::transfer;

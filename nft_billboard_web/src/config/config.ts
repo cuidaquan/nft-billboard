@@ -39,7 +39,7 @@ export const NETWORKS: Record<NetworkName, NetworkConfig> = {
  * 默认网络设置
  * 可通过环境变量 REACT_APP_DEFAULT_NETWORK 修改
  */
-export const DEFAULT_NETWORK: NetworkName = 
+export const DEFAULT_NETWORK: NetworkName =
   (process.env.REACT_APP_DEFAULT_NETWORK as NetworkName) || 'testnet';
 
 /**
@@ -52,24 +52,18 @@ export const CONTRACT_CONFIG = {
    * 可通过环境变量 REACT_APP_CONTRACT_PACKAGE_ID 修改
    */
   PACKAGE_ID: process.env.REACT_APP_CONTRACT_PACKAGE_ID || '0x123...',
-  
+
   /**
    * 合约模块名称
    * 可通过环境变量 REACT_APP_CONTRACT_MODULE_NAME 修改
    */
-  MODULE_NAME: process.env.REACT_APP_CONTRACT_MODULE_NAME || 'billboard_nft',
-  
+  MODULE_NAME: process.env.REACT_APP_CONTRACT_MODULE_NAME || 'nft_billboard',
+
   /**
    * 广告位工厂对象ID
    * 可通过环境变量 REACT_APP_FACTORY_OBJECT_ID 修改
    */
   FACTORY_OBJECT_ID: process.env.REACT_APP_FACTORY_OBJECT_ID || '0x123...',
-
-  /**
-   * NFT显示配置对象ID
-   * 可通过环境变量 REACT_APP_NFT_DISPLAY_CONFIG_ID 修改
-   */
-  NFT_DISPLAY_CONFIG_ID: process.env.REACT_APP_NFT_DISPLAY_CONFIG_ID || '0x123...',
 
   /**
    * Clock对象ID
@@ -93,4 +87,4 @@ export const API_CONFIG = {
  * 是否使用模拟数据
  * 开发阶段可以设置为true，使用模拟数据而不是实际调用链上合约
  */
-export const USE_MOCK_DATA = process.env.REACT_APP_USE_MOCK_DATA === 'true'; 
+export const USE_MOCK_DATA = process.env.REACT_APP_USE_MOCK_DATA === 'true';

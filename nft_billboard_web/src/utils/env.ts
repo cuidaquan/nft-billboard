@@ -86,14 +86,6 @@ export const getFactoryObjectId = (): string => {
 };
 
 /**
- * 获取NFT显示配置ID
- * @returns NFT显示配置ID
- */
-export const getNftDisplayConfigId = (): string => {
-  return process.env.REACT_APP_NFT_DISPLAY_CONFIG_ID || '';
-};
-
-/**
  * 获取时钟ID
  * @returns 时钟ID
  */
@@ -148,7 +140,6 @@ const env = {
   getContractPackageId,
   getContractModuleName,
   getFactoryObjectId,
-  getNftDisplayConfigId,
   getClockId,
   getWalrusEnvironment,
   getWalrusAggregatorUrl,
@@ -156,4 +147,4 @@ const env = {
   useMockData,
 };
 
-export default env; 
+export default env;

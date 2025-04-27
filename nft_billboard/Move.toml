@@ -1,5 +1,5 @@
 [package]
-name = "sui_billboard_nft"
+name = "nft_billboard"
 version = "0.1.0"
 edition = "2024.beta"
 
@@ -7,5 +7,5 @@ edition = "2024.beta"
 
 
 [addresses]
-sui_billboard_nft = "0x0"
+nft_billboard = "0x0"
 

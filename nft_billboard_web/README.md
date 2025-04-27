@@ -86,7 +86,7 @@ src/
 ```
 # .env.development / .env.production
 REACT_APP_CONTRACT_PACKAGE_ID=0x...  # 合约包ID
-REACT_APP_CONTRACT_MODULE_NAME=billboard_nft  # 合约模块名
+REACT_APP_CONTRACT_MODULE_NAME=nft_billboard  # 合约模块名
 REACT_APP_FACTORY_OBJECT_ID=0x...  # 工厂对象ID
 REACT_APP_CLOCK_ID=0x6  # 时钟对象ID
 
