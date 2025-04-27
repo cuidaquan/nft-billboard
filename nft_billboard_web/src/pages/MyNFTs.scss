@@ -1,0 +1,158 @@
+.my-nfts-page {
+  .section-title {
+    margin-bottom: 32px;
+    
+    h2 {
+      font-weight: 700;
+      margin-bottom: 8px;
+      position: relative;
+      display: inline-block;
+      
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 0;
+        width: 60px;
+        height: 3px;
+        background: var(--primary-gradient);
+        border-radius: 4px;
+      }
+    }
+    
+    p {
+      color: var(--text-medium);
+      font-size: 16px;
+    }
+  }
+
+  .connect-wallet-prompt {
+    margin: 24px 0;
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    animation: fadeIn var(--animation-speed-normal) ease-in-out;
+  }
+  
+  .loading-container {
+    text-align: center;
+    padding: 64px 0;
+    animation: pulse 2s infinite ease-in-out;
+    
+    p {
+      margin-top: 16px;
+      color: var(--text-medium);
+      font-size: 16px;
+    }
+  }
+  
+  .error-alert {
+    margin-bottom: 24px;
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    box-shadow: var(--box-shadow-sm);
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 64px 0;
+    animation: fadeIn var(--animation-speed-normal) ease-in-out;
+    
+    .empty-actions {
+      margin-top: 32px;
+      
+      button {
+        &.ant-btn-primary {
+          a {
+            text-decoration: none;
+            color: white;
+          }
+        }
+      }
+    }
+  }
+  
+  .nft-tabs {
+    animation: slideUp var(--animation-speed-normal) ease-in-out;
+    
+    .ant-tabs-nav {
+      margin-bottom: 32px;
+      
+      &::before {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      }
+      
+      .ant-tabs-tab {
+        padding: 12px 0;
+        margin: 0 24px 0 0;
+        font-weight: 500;
+        
+        .tab-label {
+          display: flex;
+          align-items: center;
+          
+          .anticon {
+            margin-right: 8px;
+            font-size: 16px;
+          }
+        }
+        
+        &.ant-tabs-tab-active .ant-tabs-tab-btn {
+          color: var(--primary);
+        }
+      }
+      
+      .ant-tabs-ink-bar {
+        background: var(--primary-gradient);
+        height: 3px;
+        border-radius: 3px 3px 0 0;
+      }
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    
+    .empty-tab-content {
+      padding: 48px 0;
+      margin: 24px 0;
+      
+      .ant-empty-image {
+        height: 80px;
+      }
+      
+      .ant-empty-description {
+        color: var(--text-medium);
+        font-size: 16px;
+      }
+    }
+  }
+} 
+
+// 响应式调整
+@media (max-width: 768px) {
+  .my-nfts-page {
+    .nft-tabs {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .ant-tabs-nav {
+        .ant-tabs-tab {
+          margin: 0 16px 0 0;
+          
+          .tab-label {
+            .anticon {
+              margin-right: 4px;
+            }
+            
+            .ant-badge {
+              transform: scale(0.8);
+            }
+          }
+        }
+      }
+    }
+  }
+} 

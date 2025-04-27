@@ -1,0 +1,11 @@
+[package]
+name = "sui_billboard_nft"
+version = "0.1.0"
+edition = "2024.beta"
+
+[dependencies]
+
+
+[addresses]
+sui_billboard_nft = "0x0"
+

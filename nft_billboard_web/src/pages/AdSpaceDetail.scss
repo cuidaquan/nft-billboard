@@ -1,0 +1,424 @@
+.ad-space-detail-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  position: relative;
+  
+  // 添加粒子背景
+  &:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 300px;
+    background: linear-gradient(180deg, rgba(231, 240, 255, 0.3) 0%, rgba(231, 240, 255, 0) 100%);
+    z-index: -1;
+    opacity: 0.7;
+  }
+  
+  .ad-space-header {
+    margin-bottom: 20px;
+    
+    h2 {
+      margin-bottom: 16px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #1677ff, #4096ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+  
+  .loading-container {
+    text-align: center;
+    padding: 60px 0;
+    
+    p {
+      margin-top: 12px;
+      color: #666;
+    }
+  }
+  
+  .error-container {
+    margin: 40px auto;
+    max-width: 800px;
+    
+    .error-actions {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      
+      .ant-btn {
+        transition: all 0.3s;
+        
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+      }
+    }
+    
+    .ant-alert {
+      margin-bottom: 20px;
+      border-radius: 8px;
+    }
+  }
+  
+  .ant-card {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(240, 240, 240, 0.8);
+    backdrop-filter: blur(5px);
+    transition: all 0.3s;
+    
+    &:hover {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+  }
+  
+  .ad-space-content {
+    display: flex;
+    flex-direction: column;
+    
+    @media (min-width: 768px) {
+      flex-direction: row;
+    }
+    
+    .ad-space-image {
+      width: 100%;
+      margin-bottom: 20px;
+      
+      @media (min-width: 768px) {
+        width: 50%;
+        margin-right: 20px;
+        margin-bottom: 0;
+      }
+      
+      .ad-space-detail-placeholder {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e4ecfb 100%);
+        border-radius: 12px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 250px;
+        border: 1px dashed rgba(24, 144, 255, 0.3);
+        
+        &.loading {
+          background: rgba(240, 240, 240, 0.6);
+        }
+        
+        .placeholder-content {
+          text-align: center;
+          padding: 20px;
+        }
+      }
+      
+      .active-nft-display {
+        position: relative;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        
+        &:before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          border: 2px solid transparent;
+          border-radius: 12px;
+          background: linear-gradient(90deg, #1677ff, #4096ff) border-box;
+          -webkit-mask:
+            linear-gradient(#fff 0 0) padding-box, 
+            linear-gradient(#fff 0 0);
+          -webkit-mask-composite: destination-out;
+          mask-composite: exclude;
+          opacity: 0.7;
+          pointer-events: none;
+        }
+        
+        .carousel-controls {
+          position: absolute;
+          bottom: 15px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 5;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          
+          .carousel-info {
+            margin-bottom: 10px;
+            
+            .ant-tag {
+              font-weight: 600;
+              padding: 5px 12px;
+              border-radius: 20px;
+              color: white;
+              background: rgba(24, 144, 255, 0.85);
+              border: none;
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+              backdrop-filter: blur(4px);
+              
+              .anticon {
+                margin-right: 5px;
+              }
+            }
+          }
+          
+          .carousel-nav {
+            display: flex;
+            gap: 15px;
+            
+            .nav-button {
+              width: 40px;
+              height: 40px;
+              border: none;
+              box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+              opacity: 0.85;
+              transition: all 0.3s;
+              
+              &:hover {
+                opacity: 1;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+              }
+              
+              &.prev {
+                background: linear-gradient(90deg, #1677ff, #4e9eff);
+              }
+              
+              &.next {
+                background: linear-gradient(90deg, #4e9eff, #1677ff);
+              }
+            }
+          }
+        }
+        
+        .active-badge {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          z-index: 5;
+          
+          .ant-tag {
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+          }
+        }
+        
+        img {
+          width: 100%;
+          display: block;
+          border-radius: 12px;
+          transition: transform 0.5s;
+          
+          &:hover {
+            transform: scale(1.02);
+          }
+        }
+      }
+    }
+    
+    .ad-space-info {
+      width: 100%;
+      
+      @media (min-width: 768px) {
+        width: 50%;
+      }
+      
+      h4 {
+        margin-bottom: 16px;
+        color: #1f1f1f;
+        font-weight: 600;
+      }
+      
+      .ant-typography {
+        margin-bottom: 12px;
+      }
+      
+      .price-detail {
+        margin-bottom: 20px;
+        background: rgba(24, 144, 255, 0.03);
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #1890ff;
+        
+        h5 {
+          margin-bottom: 12px;
+          color: #1890ff;
+          font-weight: 600;
+        }
+        
+        .price-description {
+          color: #8c8c8c;
+          font-style: italic;
+        }
+      }
+      
+      .purchase-section {
+        margin-top: 20px;
+        
+        .ant-btn {
+          height: 50px;
+          font-size: 16px;
+          border-radius: 8px;
+          background: linear-gradient(90deg, #1677ff, #4096ff);
+          border: none;
+          box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
+          transition: all 0.3s;
+          
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(24, 144, 255, 0.3);
+            background: linear-gradient(90deg, #1677ff, #69c0ff);
+          }
+          
+          .anticon {
+            font-size: 20px;
+            margin-right: 8px;
+          }
+        }
+        
+        .purchase-note {
+          color: #8c8c8c;
+          font-size: 12px;
+        }
+      }
+    }
+  }
+  
+  .nft-list-card {
+    margin-top: 30px;
+    
+    .ant-card-body {
+      h4 {
+        margin-bottom: 20px;
+        position: relative;
+        padding-left: 12px;
+        
+        &:before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 5px;
+          bottom: 5px;
+          width: 4px;
+          background: linear-gradient(to bottom, #1677ff, #4096ff);
+          border-radius: 2px;
+        }
+      }
+    }
+    
+    .loading-nfts {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    
+    .nft-card {
+      height: 100%;
+      transition: all 0.3s;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #f0f0f0;
+      
+      &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        border-color: rgba(24, 144, 255, 0.2);
+      }
+      
+      .nft-card-image-container {
+        position: relative;
+        height: 200px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #f5f7fa 0%, #e4ecfb 100%);
+        
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.4s;
+          
+          &:hover {
+            transform: scale(1.05);
+          }
+        }
+        
+        .nft-card-tag {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          z-index: 2;
+          display: flex;
+          gap: 4px;
+          
+          .ant-tag {
+            font-weight: bold;
+            padding: 0 8px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          }
+        }
+      }
+      
+      .ant-card-meta-title {
+        margin-bottom: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      .nft-card-description {
+        .nft-lease-time {
+          display: flex;
+          align-items: center;
+          font-size: 12px;
+          color: #8c8c8c;
+          
+          .anticon {
+            margin-right: 4px;
+          }
+        }
+      }
+      
+      .ant-card-actions {
+        background-color: #fafafa;
+        border-top: 1px solid #f0f0f0;
+        
+        .ant-btn-link {
+          color: #1677ff;
+          
+          &:hover {
+            color: #4096ff;
+            text-decoration: underline;
+          }
+        }
+      }
+    }
+  }
+  
+  // 添加一些动画元素
+  .animate-pulse {
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+} 

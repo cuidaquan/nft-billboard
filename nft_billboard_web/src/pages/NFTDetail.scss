@@ -1,0 +1,118 @@
+.nft-detail-page {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  
+  .nft-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    
+    .status-tag {
+      .status {
+        font-size: 14px;
+        padding: 4px 12px;
+        font-weight: bold;
+        border-radius: 4px;
+        
+        &.active {
+          color: #52c41a;
+          background: rgba(82, 196, 26, 0.1);
+          border-color: #52c41a;
+          animation: pulse 2s infinite;
+        }
+        
+        &.expired {
+          color: #f5222d;
+          background: rgba(245, 34, 45, 0.1);
+          border-color: #f5222d;
+        }
+      }
+    }
+  }
+  
+  .nft-content {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 32px;
+    
+    @media (max-width: 768px) {
+      flex-direction: column;
+    }
+    
+    .nft-image {
+      flex: 0 0 45%;
+      
+      img, video {
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        display: block;
+      }
+      
+      .loading-media {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 300px;
+        color: var(--text-medium);
+        font-size: 16px;
+        background-color: #f0f0f0;
+      }
+      
+      .media-error {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+    }
+    
+    .nft-details {
+      flex: 1;
+      
+      .ant-card {
+        height: 100%;
+      }
+      
+      .nft-actions {
+        margin-top: 24px;
+        display: flex;
+        justify-content: flex-end;
+      }
+    }
+  }
+  
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    
+    p {
+      margin-top: 16px;
+      color: rgba(0, 0, 0, 0.45);
+    }
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(82, 196, 26, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(82, 196, 26, 0);
+  }
+}
