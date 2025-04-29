@@ -451,34 +451,75 @@ const NFTDetailPage: React.FC = () => {
           throw new Error('钱包未连接');
         }
 
-        return {
-          signTransaction: async (tx: any) => {
-            console.log('准备签名交易:', tx);
+        // 从配置获取当前网络
+        const networkConfig = 'testnet'; // 可以从配置中获取
+        // 构建链ID
+        const chainId: `${string}:${string}` = `sui:${networkConfig}`;
 
-            // 检查交易对象类型
-            if (typeof tx.toJSON === 'function') {
-              console.log('使用toJSON方法');
-              // 旧版本API
-              return await new Promise((resolve, reject) => {
-                signAndExecute(
-                  {
-                    transaction: tx,
-                    account: account
-                  },
-                  {
-                    onSuccess: (data) => resolve(data),
-                    onError: (error) => reject(error)
-                  }
-                );
-              });
-            } else {
-              console.log('使用新版本API - 但当前不支持');
-              // 新版本API - 但当前实现不支持
-              console.error('当前版本不支持此操作，请联系管理员更新SDK');
-              throw new Error('当前版本不支持此操作，请联系管理员更新SDK');
+        return {
+          // 签名交易方法
+          signTransaction: async (tx: any) => {
+            console.log('准备签名交易，交易对象:', tx);
+
+            // 确保交易对象包含 sender 信息
+            if (tx && typeof tx === 'object' && 'setSender' in tx && typeof tx.setSender === 'function') {
+              console.log('设置交易发送者为:', account.address);
+              tx.setSender(account.address);
+            }
+
+            // 特殊处理Uint8Array类型的交易数据
+            if (tx instanceof Uint8Array) {
+              console.log('检测到交易对象是Uint8Array类型，尝试转换为Transaction对象');
+
+              try {
+                // 使用Transaction.from将二进制数据转换为Transaction对象
+                const Transaction = (await import('@mysten/sui/transactions')).Transaction;
+                const transactionBlock = Transaction.from(tx);
+                console.log('成功将Uint8Array转换为Transaction对象', transactionBlock);
+
+                // 确保设置发送者
+                if ('setSender' in transactionBlock && typeof transactionBlock.setSender === 'function') {
+                  transactionBlock.setSender(account.address);
+                }
+
+                const response = await new Promise((resolve, reject) => {
+                  signAndExecute(
+                    {
+                      transaction: transactionBlock,
+                      chain: chainId,
+                      account: account
+                    },
+                    {
+                      onSuccess: (data) => {
+                        console.log('交易签名成功:', data);
+                        resolve(data);
+                      },
+                      onError: (error) => {
+                        console.error('交易签名失败:', error);
+                        reject(error);
+                      }
+                    }
+                  );
+                });
+
+                if (!response) {
+                  throw new Error('交易签名未返回结果');
+                }
+
+                return response;
+              } catch (err: any) {
+                console.error('无法处理Uint8Array类型的交易:', err);
+                throw new Error(`无法处理Uint8Array类型的交易: ${err.message || '未知错误'}`);
+              }
             }
           },
-          toSuiAddress: () => account.address,
+
+          // 获取 Sui 地址
+          toSuiAddress: () => {
+            return account.address;
+          },
+
+          // 地址属性
           address: account.address
         };
       };
@@ -487,7 +528,11 @@ const NFTDetailPage: React.FC = () => {
       const duration = renewDays * 24 * 60 * 60;
 
       // 调用Walrus服务延长存储期限，传入contentUrl而不是blobId
-      await walrusService.extendStorageDuration(contentUrl, duration, createSigner());
+      // 使用epochs模式延长存储期限
+      await walrusService.extendStorageDuration(contentUrl, duration, createSigner(), {
+        // 不使用endEpoch模式，使用默认的epochs模式
+        useEndEpoch: false
+      });
 
       message.success({
         content: 'Walrus存储期限延长成功！',
@@ -500,16 +545,12 @@ const NFTDetailPage: React.FC = () => {
       console.error('延长Walrus存储期限失败:', error);
 
       // 检查是否是SDK不兼容错误
-      let errorMessage = '延长Walrus存储期限失败。请联系管理员处理。';
-
       if (error instanceof Error) {
         if (error.message.includes('toJSON is not a function') ||
             error.message.includes('当前版本的Walrus SDK与应用不兼容') ||
             error.message.includes('当前版本不支持此操作')) {
-          errorMessage = 'Walrus存储服务暂时不可用。请稍后再试。';
           console.log('检测到SDK不兼容错误，显示友好错误消息');
         } else if (error.message.includes('Cannot destructure property')) {
-          errorMessage = 'Walrus存储服务签名失败。请稍后再试。';
           console.log('检测到签名错误，显示友好错误消息');
         }
       }

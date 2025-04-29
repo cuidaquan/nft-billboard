@@ -1,6 +1,6 @@
 import { WalrusClient } from '@mysten/walrus';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import type { WriteBlobOptions } from '@mysten/walrus';
+import type { WriteBlobOptions, ExtendBlobOptions } from '@mysten/walrus';
 import type { Signer } from '@mysten/sui/cryptography';
 import { WALRUS_CONFIG, getWalrusAggregatorUrl } from '../config/walrusConfig';
 
@@ -261,15 +261,45 @@ export class WalrusService {
 
   /**
    * 延长Walrus存储期限
+   *
+   * 根据Walrus SDK文档，支持两种方式延长存储期限：
+   * 1. 通过指定epochs参数，增加存储的epoch数量
+   * 2. 通过指定endEpoch参数，直接设置存储的结束epoch
+   *
+   * 内部使用ExtendBlobOptions类型构造参数：
+   * ```typescript
+   * type ExtendBlobOptions = {
+   *   blobObjectId: string;
+   *   owner: string;
+   *   walCoin?: TransactionObjectArgument;
+   * } & (
+   *   | { endEpoch?: never; epochs: number }
+   *   | { endEpoch: number; epochs?: never }
+   * )
+   * ```
+   *
+   * 注意：ExtendBlobOptions类型要求必须提供epochs或endEpoch其中之一，但不能同时提供两者。
+   *
+   * 参考文档：
+   * - https://sdk.mystenlabs.com/typedoc/classes/_mysten_walrus.WalrusClient.html#executeextendblobtransaction
+   * - https://sdk.mystenlabs.com/typedoc/types/_mysten_walrus.ExtendBlobOptions.html
+   *
    * @param contentUrl 内容URL或blobId
-   * @param duration 延长的存储时长(秒)
+   * @param duration 延长的存储时长(秒)，仅在使用epochs模式时有效
    * @param signer 签名对象
-   * @returns Promise<boolean>
+   * @param options 可选参数，包括：
+   *   - endEpoch: 直接指定结束的epoch，如果提供此参数，将忽略duration
+   *   - useEndEpoch: 是否使用endEpoch模式而非epochs模式
+   * @returns Promise<boolean> 操作成功返回true，失败抛出异常
    */
   async extendStorageDuration(
     contentUrl: string,
     duration: number,
-    signer: Signer | CustomSigner
+    signer: Signer | CustomSigner,
+    options?: {
+      endEpoch?: number;
+      useEndEpoch?: boolean;
+    }
   ): Promise<boolean> {
     try {
       console.log(`正在延长Walrus存储期限，URL/ID: ${contentUrl}, 延长时间: ${duration}秒`);
@@ -283,26 +313,50 @@ export class WalrusService {
 
       console.log(`成功提取对象ID: ${blobObjectId}`);
 
-      // 计算存储时长（转换为epoch数，1个epoch约24小时）
-      const epochs = Math.ceil(duration / (24 * 60 * 60));
-      const durationDays = duration / (24 * 60 * 60);
-      console.log(`存储期限将延长 ${epochs} 个epochs（约${epochs}天），原始时长: ${durationDays.toFixed(2)}天 (${duration}秒)`);
+      // 准备交易参数
+      const owner = signer.toSuiAddress();
+
+      // 根据options决定使用哪种模式构造ExtendBlobOptions参数
+      let transactionParams: ExtendBlobOptions & { signer: any };
+
+      if (options?.useEndEpoch && options?.endEpoch !== undefined) {
+        // 使用endEpoch模式
+        const endEpoch = options.endEpoch;
+        console.log(`使用endEpoch模式延长存储期限，目标结束epoch: ${endEpoch}`);
+
+        // 构造使用endEpoch的参数
+        transactionParams = {
+          blobObjectId,
+          owner,
+          endEpoch,
+          signer: signer as any // 使用类型断言解决类型兼容性问题
+        };
+      } else {
+        // 使用epochs模式（增加存储时间）
+        const epochs = Math.ceil(duration / (24 * 60 * 60));
+        const durationDays = duration / (24 * 60 * 60);
+        console.log(`使用epochs模式延长存储期限，增加 ${epochs} 个epochs（约${epochs}天），原始时长: ${durationDays.toFixed(2)}天 (${duration}秒)`);
+
+        // 构造使用epochs的参数
+        transactionParams = {
+          blobObjectId,
+          owner,
+          epochs,
+          signer: signer as any // 使用类型断言解决类型兼容性问题
+        };
+      }
 
       try {
         // 创建并执行延长存储期限的交易
         console.log('准备执行延长存储期限交易，参数:', {
-          blobObjectId,
-          owner: signer.toSuiAddress(),
-          epochs
+          blobObjectId: transactionParams.blobObjectId,
+          owner: transactionParams.owner,
+          ...(transactionParams.epochs !== undefined ? { epochs: transactionParams.epochs } : {}),
+          ...(transactionParams.endEpoch !== undefined ? { endEpoch: transactionParams.endEpoch } : {})
         });
 
-        // 使用try-catch包装executeExtendBlobTransaction调用
-        const result = await this.client.executeExtendBlobTransaction({
-          blobObjectId: blobObjectId, // 使用从URL中提取的对象ID
-          owner: signer.toSuiAddress(), // 使用signer的地址作为owner
-          epochs: epochs,
-          signer: signer as any // 使用类型断言解决类型兼容性问题
-        });
+        // 执行延长存储期限交易
+        const result = await this.client.executeExtendBlobTransaction(transactionParams);
 
         if (!result) {
           throw new Error('延长存储期限失败：未获取到有效的响应');
@@ -323,6 +377,19 @@ export class WalrusService {
           // 这里可以添加替代实现，例如直接调用Walrus API
           // 由于无法直接修改Walrus SDK，我们可以提供一个友好的错误消息
           throw new Error('当前版本的Walrus SDK与应用不兼容，请联系管理员更新SDK');
+        }
+
+        // 检查是否是权限错误
+        if (txError instanceof Error &&
+            (txError.message.includes('authority') ||
+             txError.message.includes('permission') ||
+             txError.message.includes('owner'))) {
+          throw new Error(`延长存储期限失败：您没有权限操作此Blob。只有Blob的所有者才能延长其存储期限。`);
+        }
+
+        // 检查是否是gas不足错误
+        if (txError instanceof Error && txError.message.includes('gas')) {
+          throw new Error(`延长存储期限失败：Gas不足。请确保您的钱包中有足够的SUI代币支付交易费用。`);
         }
 
         // 重新抛出原始错误
