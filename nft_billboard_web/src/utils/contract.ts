@@ -1,5 +1,5 @@
 import { Transaction } from '@mysten/sui/transactions';
-import { SuiClient } from '@mysten/sui/client';
+import { SuiClient, PaginatedObjectsResponse } from '@mysten/sui/client';
 import { CONTRACT_CONFIG, NETWORKS, DEFAULT_NETWORK, USE_MOCK_DATA } from '../config/config';
 import { BillboardNFT, AdSpace, PurchaseAdSpaceParams, UpdateNFTContentParams, RenewNFTParams, CreateAdSpaceParams, RemoveGameDevParams } from '../types';
 
@@ -324,47 +324,64 @@ export async function getUserNFTs(owner: string): Promise<BillboardNFT[]> {
 
     console.log(`[${requestId}] 获取到Factory对象:`, factoryObject.data?.objectId);
 
-    // 直接查询用户拥有的NFT对象
-    const ownedObjects = await client.getOwnedObjects({
-      owner,
-      options: {
-        showContent: true,
-        showDisplay: true,
-        showType: true,
-      },
-      limit: 50  // 限制返回数量
-    });
+    // 构建NFT类型字符串，用于过滤
+    const nftTypeStr = `${CONTRACT_CONFIG.PACKAGE_ID}::nft::AdBoardNFT`;
+    console.log(`[${requestId}] 使用类型过滤:`, nftTypeStr);
 
-    console.log(`[${requestId}] 获取到用户拥有的对象:`, ownedObjects.data?.length || 0);
+    // 使用分页方式获取所有NFT对象
+    let hasNextPage = true;
+    let cursor: string | null = null;
+    const pageSize = 50; // 每页获取的数量（Sui SDK的最大限制是50）
+    const allNftObjects: any[] = [];
 
-    // 处理结果
-    if (!ownedObjects.data || ownedObjects.data.length === 0) {
-      console.log(`[${requestId}] 用户没有拥有任何对象`);
-      return [];
+    // 循环获取所有页面的数据
+    while (hasNextPage) {
+      console.log(`[${requestId}] 获取页面数据，cursor:`, cursor);
+
+      // 使用类型过滤直接查询用户拥有的NFT对象
+      const ownedObjects: PaginatedObjectsResponse = await client.getOwnedObjects({
+        owner,
+        filter: {
+          StructType: nftTypeStr
+        },
+        options: {
+          showContent: true,
+          showDisplay: true,
+          showType: true,
+        },
+        cursor,
+        limit: pageSize
+      });
+
+      console.log(`[${requestId}] 当前页获取到对象数量:`, ownedObjects.data?.length || 0);
+
+      // 添加当前页的对象到结果集
+      if (ownedObjects.data && ownedObjects.data.length > 0) {
+        allNftObjects.push(...ownedObjects.data);
+      }
+
+      // 检查是否有下一页
+      if (ownedObjects.hasNextPage && ownedObjects.nextCursor) {
+        cursor = ownedObjects.nextCursor;
+        console.log(`[${requestId}] 存在下一页，nextCursor:`, cursor);
+      } else {
+        hasNextPage = false;
+        console.log(`[${requestId}] 已获取所有页面数据`);
+      }
     }
 
-    // 筛选出广告位NFT类型的对象
-    const nftObjects = ownedObjects.data.filter(obj => {
-      if (!obj.data?.content) return false;
+    console.log(`[${requestId}] 获取到用户拥有的NFT对象总数:`, allNftObjects.length);
 
-      const typeStr = obj.data.type || '';
-      const contentType = obj.data.content.dataType;
-
-      // 检查对象类型是否是广告位NFT
-      // 更新类型检查以匹配 AdBoardNFT 类型
-      const isNftType = typeStr.includes(`${CONTRACT_CONFIG.PACKAGE_ID}::nft::AdBoardNFT`);
-
-      console.log(`[${requestId}] 对象类型检查:`, obj.data.objectId, 'type:', typeStr, 'isNftType:', isNftType, 'contentType:', contentType);
-
-      return isNftType && contentType === 'moveObject';
-    });
-
-    console.log(`[${requestId}] 筛选出的NFT对象数量:`, nftObjects.length);
+    // 如果没有找到任何对象，直接返回空数组
+    if (allNftObjects.length === 0) {
+      console.log(`[${requestId}] 用户没有拥有任何NFT对象`);
+      return [];
+    }
 
     // 转换为前端使用的NFT数据结构
     const nfts: BillboardNFT[] = [];
 
-    for (const nftObj of nftObjects) {
+    for (const nftObj of allNftObjects) {
       try {
         if (!nftObj.data?.content || nftObj.data.content.dataType !== 'moveObject') {
           console.warn(`[${requestId}] NFT对象不是moveObject类型:`, nftObj.data?.objectId);
