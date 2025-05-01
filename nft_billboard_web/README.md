@@ -38,11 +38,10 @@ NFT Billboard前端应用是一个基于React和TypeScript构建的现代化Web�
 npm install
 
 # 启动开发服务器
-npm run start:dev
+npm start
 
-
-# 构建版本
-npm run build:dev
+# 构建生产版本
+npm run build
 ```
 
 开发服务器将在 [http://localhost:3000](http://localhost:3000) 启动。
@@ -81,7 +80,7 @@ src/
 
 ## 环境配置
 
-项目使用环境变量配置关键参数，支持多环境部署：
+项目使用环境变量配置关键参数，支持开发和生产环境：
 
 ```
 # .env.development / .env.production
@@ -93,11 +92,16 @@ REACT_APP_CLOCK_ID=0x6  # 时钟对象ID
 # 网络配置
 REACT_APP_DEFAULT_NETWORK=testnet  # mainnet, testnet
 
+# 环境配置
+REACT_APP_ENV=development/production  # 由npm脚本通过cross-env设置
+
 # Walrus配置
 REACT_APP_WALRUS_ENVIRONMENT=testnet
 REACT_APP_WALRUS_AGGREGATOR_URL_MAINNET=https://walrus.globalstake.io/v1/blobs/by-object-id/
 REACT_APP_WALRUS_AGGREGATOR_URL_TESTNET=https://aggregator.walrus-testnet.walrus.space/v1/blobs/by-object-id/
 ```
+
+使用`npm start`启动开发环境，使用`npm run build`构建生产环境。
 
 ## 网络支持
 
@@ -163,9 +167,6 @@ REACT_APP_WALRUS_AGGREGATOR_URL_TESTNET=https://aggregator.walrus-testnet.walrus
 ## 部署指南
 
 1. 更新环境配置文件，设置正确的合约参数
-2. 构建生产版本：`npm run build:prod`
+2. 构建生产版本：`npm run build`
 3. 部署到静态网站托管服务，如Vercel、Netlify等
 
-## 许可证
-
-[MIT](LICENSE)

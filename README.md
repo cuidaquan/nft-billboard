@@ -107,10 +107,10 @@ cd nft_billboard_web
 npm install
 
 # 启动开发服务器
-npm run start:dev
+npm start
 
-# 构建版本
-npm run build:dev
+# 构建生产版本
+npm run build
 ```
 
 
@@ -216,8 +216,8 @@ while (i < lease_days) {
 
 ### 前端部署
 
-1. 在环境配置文件中设置合约相关参数
-2. 构建前端应用
+1. 在环境配置文件(.env.production)中设置合约相关参数
+2. 构建前端应用：`npm run build`
 3. 部署到静态网站托管服务
 
 ## 后续规划
