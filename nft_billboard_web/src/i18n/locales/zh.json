@@ -187,10 +187,10 @@
       "adContent": "广告内容",
       "adContentRequired": "请提供广告内容",
       "recommendedSize": "推荐尺寸为",
-      "projectUrl": "项目网站URL",
+      "projectUrl": "项目网站URL（可选）",
       "projectUrlRequired": "请输入项目网站URL",
       "projectUrlInvalid": "请输入有效的URL",
-      "projectUrlExtra": "用户点击广告时将跳转到此链接",
+      "projectUrlExtra": "用户点击广告时将跳转到此链接，如不填写则不会有跳转",
       "yourLeasePeriod": "您选择的租期",
       "days": "天",
       "calculatingPrice": "计算价格中...",
@@ -250,7 +250,22 @@
         "title": "更新广告内容",
         "placeholder": "请输入内容URL",
         "required": "请输入内容URL",
-        "description": "请输入新的广告内容URL，该URL应指向图片或其他媒体内容。"
+        "description": "请输入新的广告内容URL，该URL应指向图片或其他媒体内容。",
+        "storageMode": "选择内容来源",
+        "externalUrl": "外部URL",
+        "walrusUpload": "Walrus上传",
+        "currentContent": "当前广告内容",
+        "source": "来源",
+        "walrusStorage": "Walrus存储",
+        "externalStorage": "外部URL",
+        "newContent": "新广告内容",
+        "externalUrlLabel": "外部URL",
+        "externalUrlHelp": "请输入有效的图片或视频URL",
+        "preview": "新内容预览",
+        "deleteWarning": {
+          "title": "注意",
+          "description": "您正在从Walrus存储切换到外部URL。更新完成后，原Walrus存储的内容将被删除，可能返还部分存储费用。"
+        }
       },
       "renewLease": {
         "title": "续租NFT",
@@ -261,11 +276,41 @@
         "priceLabel": "续租价格: ",
         "description": "续租将延长NFT的租赁期限，价格由智能合约根据续租天数动态计算。续租天数范围：1-365天。"
       }
+    },
+    "transaction": {
+      "fetchingDetails": "正在获取NFT详细信息...",
+      "fetchSuccess": "获取NFT详细信息成功",
+      "fetchFailed": "获取NFT详细信息失败，无法确定存储类型。继续执行续租操作。",
+      "extendingWalrus": "正在延长Walrus存储期限...",
+      "extendWalrusFailed": "延长Walrus存储期限失败，续租操作已取消。请稍后再试。",
+      "extendWalrusSuccess": "Walrus存储期限延长成功！",
+      "renewingNft": "正在续租NFT...",
+      "renewSubmitted": "续租交易已提交",
+      "renewSuccess": "NFT续租成功！",
+      "renewPartialSuccess": "交易已提交，但无法立即确认结果。请稍后刷新页面查看更新。",
+      "renewFailed": "续租失败，请检查钱包并重试",
+      "renewFailedInsufficientBalance": "续租失败：钱包余额不足，请确保有足够的SUI支付租金",
+      "renewFailedContractError": "续租失败：合约执行错误",
+      "renewFailedUserCancelled": "您已取消续租操作",
+      "invalidDays": "请选择有效的续租天数",
+      "invalidPrice": "无效的续租价格，请刷新页面重试",
+      "insufficientBalance": "余额不足！需要 {price} SUI，但钱包只有 {balance} SUI",
+      "expiredNft": "此NFT已过期，根据合约规定，不能对已过期的NFT进行续租。",
+      "expiredNftWarning": "由于合约限制，当前只能对未过期的NFT进行续租。此NFT已过期，请联系管理员。"
+    },
+    "messages": {
+      "contentUpdateSuccess": "广告内容已成功更新",
+      "contentUpdatePartialSuccess": "广告内容已更新，但无法刷新页面数据。请手动刷新页面。",
+      "invalidDate": "无效日期"
     }
   },
   "manage": {
     "title": "管理中心",
     "subtitle": "管理广告位和平台设置",
+    "errors": {
+      "accessDenied": "访问被拒绝",
+      "accessDeniedDesc": "您没有访问管理中心的权限。只有注册的游戏开发者或平台管理员才能访问此页面。"
+    },
     "tabs": {
       "createAdSpace": "创建广告位",
       "myAdSpaces": "我的广告位",
@@ -274,7 +319,17 @@
       "platformManage": "平台管理"
     },
     "buttons": {
-      "changePrice": "更改价格"
+      "changePrice": "更改价格",
+      "updatePrice": "更新价格",
+      "deleteAdSpace": "删除广告位",
+      "waitingConfirmation": "交易已提交，等待确认..."
+    },
+    "priceModal": {
+      "title": "更新广告位价格",
+      "currentAdSpace": "当前广告位",
+      "currentPrice": "当前价格 (SUI/天)",
+      "newPrice": "新价格 (SUI/天)",
+      "priceUpdateSuccess": "广告位价格更新成功"
     },
     "confirmDelete": {
       "title": "确定要删除此广告位吗?",
@@ -325,7 +380,12 @@
       "emptyDesc": "创建您的第一个广告位，开始赚取SUI代币",
       "activeNFT": "活跃中",
       "waitingContent": "等待广告内容",
-      "listTitle": "您创建的广告位列表"
+      "listTitle": "您创建的广告位列表",
+      "deleteSuccess": "广告位删除成功",
+      "refreshFailed": "刷新广告位列表失败，请手动刷新页面",
+      "deleteFailed": "删除广告位失败",
+      "priceUpdateFailed": "价格更新失败",
+      "invalidPrice": "请输入有效的价格"
     },
     "registerDev": {
       "title": "注册游戏开发者",
@@ -380,7 +440,8 @@
         "listUpdated": "开发者列表已更新",
         "manuallyRemoved": "已手动从列表中移除开发者",
         "manuallyUpdated": "无法从合约获取最新列表，已手动更新",
-        "removeFailed": "游戏开发者移除失败"
+        "removeFailed": "游戏开发者移除失败",
+        "manuallyAdded": "已手动添加开发者到列表"
       }
     },
     "manageDev": {
@@ -405,11 +466,30 @@
       "connectWalletError": "请先连接钱包",
       "uploadSuccess": "文件上传成功"
     },
+    "walrusUpdateWarning": "您正在使用Walrus上传新的广告内容。更新完成后，原Walrus存储的内容将被删除，可能返还部分存储费用。",
+    "externalToWalrusWarning": "您正在从外部URL切换到Walrus上传。上传后的内容将存储在Walrus上，并按租期收取存储费用。",
+    "externalUrlWarning": "您正在使用外部URL。请确保您提供的URL是可访问的，并且内容符合平台规定。",
+    "noticeTitle": "注意",
+    "deleteWalrus": {
+      "deleting": "正在删除原Walrus内容...",
+      "success": "原Walrus内容已删除",
+      "error": "删除原Walrus内容失败，但更新操作已完成"
+    },
+    "validation": {
+      "invalidUrl": "请输入有效的URL",
+      "uploadFirst": "请先上传文件到Walrus"
+    },
+    "transaction": {
+      "updating": "正在更新广告内容...",
+      "submitted": "更新交易已提交",
+      "waiting": "等待交易确认...",
+      "success": "广告内容更新成功！",
+      "partialSuccess": "交易已提交，但无法立即确认结果。请稍后刷新页面查看更新。"
+    },
     "progress": {
-      "uploading": "正在上传",
+      "uploading": "正在上传文件到Walrus存储网络...",
       "preparing": "准备上传文件...",
       "signing": "等待钱包签名交易...",
-      "uploading": "正在上传文件到Walrus存储网络...",
       "finalizing": "正在完成上传，生成访问链接...",
       "completed": "上传完成！",
       "signingHint": "请在钱包中确认交易，请勿关闭此页面"

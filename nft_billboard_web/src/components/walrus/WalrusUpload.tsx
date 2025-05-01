@@ -37,6 +37,7 @@ interface WalrusUploadProps {
   leaseDays?: number;
   customStartTime?: number; // 自定义开始时间（Unix时间戳，秒）
   onChange?: (data: { url: string; blobId?: string; storageSource: string }) => void;
+  hideStorageSelector?: boolean; // 是否隐藏存储模式选择器
 }
 
 // 上传阶段枚举
@@ -45,8 +46,16 @@ type UploadStage = 'preparing' | 'signing' | 'uploading' | 'finalizing' | 'compl
 /**
  * Walrus文件上传组件
  * 支持外部URL和Walrus上传两种模式
+ * 可以通过hideStorageSelector属性控制是否显示存储模式选择器
  */
-const WalrusUpload: React.FC<WalrusUploadProps> = ({ onSuccess, onError, leaseDays = WALRUS_CONFIG.DEFAULT_LEASE_DAYS, customStartTime, onChange }) => {
+const WalrusUpload: React.FC<WalrusUploadProps> = ({
+  onSuccess,
+  onError,
+  leaseDays = WALRUS_CONFIG.DEFAULT_LEASE_DAYS,
+  customStartTime,
+  onChange,
+  hideStorageSelector = false // 默认显示存储模式选择器
+}) => {
   const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
   const [storageMode, setStorageMode] = useState<'walrus' | 'external'>('walrus');
@@ -348,12 +357,16 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({ onSuccess, onError, leaseDa
     return false;
   };
 
+  // 构建accept属性，用于文件选择对话框中筛选文件类型
+  const acceptFileTypes = '.jpg,.jpeg,.png,.gif,.webp,.bmp,.mp4,.webm,.mov,.ogg';
+
   const uploadProps = {
     name: 'file',
     multiple: false,
     beforeUpload: handleUpload,
     showUploadList: false,
     disabled: uploading || !account?.address,
+    accept: acceptFileTypes, // 添加accept属性，限制文件选择对话框中显示的文件类型
   };
 
   const handleExternalUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -474,12 +487,15 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({ onSuccess, onError, leaseDa
 
   return (
     <div className="walrus-upload-container">
-      <div className="storage-selector">
-        <Radio.Group onChange={handleModeChange} value={storageMode}>
-          <Radio value="walrus">{t('walrusUpload.storage.walrus')}</Radio>
-          <Radio value="external">{t('walrusUpload.storage.external')}</Radio>
-        </Radio.Group>
-      </div>
+      {/* 只有在hideStorageSelector为false时才显示存储模式选择器 */}
+      {!hideStorageSelector && (
+        <div className="storage-selector">
+          <Radio.Group onChange={handleModeChange} value={storageMode}>
+            <Radio value="walrus">{t('walrusUpload.storage.walrus')}</Radio>
+            <Radio value="external">{t('walrusUpload.storage.external')}</Radio>
+          </Radio.Group>
+        </div>
+      )}
 
       {storageMode === 'walrus' ? (
         <>

@@ -270,8 +270,8 @@ const ManagePage: React.FC = () => {
       console.log('交易执行成功，已提交到区块链');
 
       // 交易已提交，显示提交成功消息
-      message.success({ content: t('manage.createAdSpace.txSubmitted'), key: 'createAdSpace', duration: 2 });
-      message.loading({ content: t('manage.createAdSpace.waitingConfirmation'), key: 'confirmAdSpace', duration: 0 });
+      message.success({ content: t('manage.createAdSpace.form.txSubmitted'), key: 'createAdSpace', duration: 2 });
+      message.loading({ content: t('manage.createAdSpace.form.waitingConfirmation'), key: 'confirmAdSpace', duration: 0 });
 
       // 使用轮询方式检查交易结果，最多尝试5次
       let attempts = 0;
@@ -337,7 +337,7 @@ const ManagePage: React.FC = () => {
       // 如果多次尝试后仍未找到，显示提示信息
       if (!success) {
         message.info({
-          content: t('manage.createAdSpace.delayedDisplay'),
+          content: t('manage.createAdSpace.form.delayedDisplay'),
           key: 'confirmAdSpace',
           duration: 4
         });
@@ -352,16 +352,16 @@ const ManagePage: React.FC = () => {
 
       // 检查特定错误类型并提供更具体的错误信息
       if (errorMsg.includes('ENotGameDev')) {
-        setError(t('manage.createAdSpace.errors.notGameDev'));
+        setError(t('manage.createAdSpace.form.errors.notGameDev'));
       } else if (errorMsg.includes('InsufficientGas')) {
-        setError(t('manage.createAdSpace.errors.insufficientGas'));
+        setError(t('manage.createAdSpace.form.errors.insufficientGas'));
       } else if (errorMsg.includes('InvalidParams') || errorMsg.includes('Invalid params')) {
-        setError(t('manage.createAdSpace.errors.invalidParams'));
+        setError(t('manage.createAdSpace.form.errors.invalidParams'));
       } else {
-        setError(`${t('manage.createAdSpace.errors.createFailed')}: ${errorMsg}`);
+        setError(`${t('manage.createAdSpace.form.errors.createFailed')}: ${errorMsg}`);
       }
 
-      message.error({ content: t('manage.createAdSpace.errors.createFailed'), key: 'createAdSpace', duration: 2 });
+      message.error({ content: t('manage.createAdSpace.form.errors.createFailed'), key: 'createAdSpace', duration: 2 });
     } finally {
       setLoading(false);
     }
@@ -478,7 +478,7 @@ const ManagePage: React.FC = () => {
             // 成功获取到包含新开发者的列表
             setRegisteredDevs(updatedDevs);
             message.success({
-              content: '开发者列表已更新',
+              content: t('manage.platformManage.registeredDevs.listUpdated'),
               key: 'refreshDevs',
               duration: 2
             });
@@ -493,7 +493,7 @@ const ManagePage: React.FC = () => {
               return prevDevs;
             });
             message.info({
-              content: '已手动添加开发者到列表',
+              content: t('manage.platformManage.registeredDevs.manuallyAdded'),
               key: 'refreshDevs',
               duration: 2
             });
@@ -680,7 +680,7 @@ const ManagePage: React.FC = () => {
   // 提交调价
   const handlePriceUpdateSubmit = async () => {
     if (!currentAdSpace || newPrice === null || newPrice <= 0) {
-      message.error('请输入有效的价格');
+      message.error(t('manage.myAdSpaces.invalidPrice'));
       return;
     }
 
@@ -698,7 +698,7 @@ const ManagePage: React.FC = () => {
       });
 
       // 显示交易执行中状态
-      message.loading({ content: '正在更新价格...', key: 'updatePrice', duration: 0 });
+      message.loading({ content: t('manage.buttons.updatePrice'), key: 'updatePrice', duration: 0 });
 
       // 执行交易
       await signAndExecute({
@@ -739,7 +739,7 @@ const ManagePage: React.FC = () => {
       }
 
       // 无论是否成功确认，都显示成功消息（交易已提交到链上）
-      message.success({ content: '广告位价格更新成功', key: 'updatePrice', duration: 2 });
+      message.success({ content: t('manage.priceModal.priceUpdateSuccess'), key: 'updatePrice', duration: 2 });
 
       // 关闭模态框
       setPriceModalVisible(false);
@@ -751,13 +751,13 @@ const ManagePage: React.FC = () => {
         console.log('广告位列表刷新成功');
       } catch (err) {
         console.error('刷新广告位列表失败:', err);
-        message.error('刷新广告位列表失败，请手动刷新页面');
+        message.error(t('manage.myAdSpaces.refreshFailed'));
       }
     } catch (err) {
       console.error('更新价格失败:', err);
       const errorMsg = err instanceof Error ? err.message : String(err);
       setError(`更新价格失败: ${errorMsg}`);
-      message.error({ content: '价格更新失败', key: 'updatePrice', duration: 2 });
+      message.error({ content: t('manage.myAdSpaces.priceUpdateFailed'), key: 'updatePrice', duration: 2 });
     } finally {
       setPriceUpdateLoading(false);
     }
@@ -776,7 +776,7 @@ const ManagePage: React.FC = () => {
       });
 
       // 显示交易执行中状态
-      message.loading({ content: '正在删除广告位...', key: 'deleteAdSpace', duration: 0 });
+      message.loading({ content: t('manage.buttons.deleteAdSpace'), key: 'deleteAdSpace', duration: 0 });
 
       // 执行交易
       await signAndExecute({
@@ -784,7 +784,7 @@ const ManagePage: React.FC = () => {
       });
 
       // 交易已提交
-      message.loading({ content: '交易已提交，等待确认...', key: 'deleteAdSpace', duration: 0 });
+      message.loading({ content: t('manage.buttons.waitingConfirmation'), key: 'deleteAdSpace', duration: 0 });
 
       // 使用轮询方式检查交易结果，最多尝试5次
       let attempts = 0;
@@ -822,7 +822,7 @@ const ManagePage: React.FC = () => {
       }
 
       // 显示成功消息
-      message.success({ content: '广告位删除成功', key: 'deleteAdSpace', duration: 2 });
+      message.success({ content: t('manage.myAdSpaces.deleteSuccess'), key: 'deleteAdSpace', duration: 2 });
 
       // 刷新广告位列表
       try {
@@ -831,13 +831,13 @@ const ManagePage: React.FC = () => {
         console.log('广告位列表刷新成功');
       } catch (err) {
         console.error('刷新广告位列表失败:', err);
-        message.error('刷新广告位列表失败，请手动刷新页面');
+        message.error(t('manage.myAdSpaces.refreshFailed'));
       }
     } catch (err) {
       console.error('删除广告位失败:', err);
       const errorMsg = err instanceof Error ? err.message : String(err);
-      setError(`删除广告位失败: ${errorMsg}`);
-      message.error({ content: '删除广告位失败', key: 'deleteAdSpace', duration: 2 });
+      setError(`${t('manage.myAdSpaces.deleteFailed')}: ${errorMsg}`);
+      message.error({ content: t('manage.myAdSpaces.deleteFailed'), key: 'deleteAdSpace', duration: 2 });
     } finally {
       setDeleteLoading(false);
     }
@@ -959,7 +959,7 @@ const ManagePage: React.FC = () => {
       // 验证比例在有效范围内 (0-100)
       const ratio = values.ratio;
       if (ratio < 0 || ratio > 100) {
-        setError('分成比例必须在0-100之间');
+        setError(t('manage.platformManage.platformRatio.rangeError'));
         setPlatformRatioLoading(false);
         return;
       }
@@ -1001,7 +1001,7 @@ const ManagePage: React.FC = () => {
       } catch (txError) {
         console.error('更新平台分成比例交易执行失败:', txError);
         const errorMsg = txError instanceof Error ? txError.message : String(txError);
-        setError(`更新平台分成比例失败: ${errorMsg}`);
+        setError(`${t('manage.platformManage.platformRatio.updateFailed')}: ${errorMsg}`);
         message.error({
           content: t('manage.platformManage.platformRatio.updateFailed'),
           key: 'updateRatio',
@@ -1011,7 +1011,7 @@ const ManagePage: React.FC = () => {
     } catch (err) {
       console.error('更新平台分成比例失败:', err);
       const errorMsg = err instanceof Error ? err.message : String(err);
-      setError(`更新平台分成比例失败: ${errorMsg}`);
+      setError(`${t('manage.platformManage.platformRatio.updateFailed')}: ${errorMsg}`);
     } finally {
       setPlatformRatioLoading(false);
     }
@@ -1051,8 +1051,8 @@ const ManagePage: React.FC = () => {
 
         <div className="connect-wallet-prompt">
           <Alert
-            message={t('common.messages.error')}
-            description={t('common.messages.warning')}
+            message={t('manage.errors.accessDenied')}
+            description={t('manage.errors.accessDeniedDesc')}
             type="warning"
             showIcon
           />
@@ -1328,7 +1328,7 @@ const ManagePage: React.FC = () => {
       />
 
       <Modal
-        title="更新广告位价格"
+        title={t('manage.priceModal.title')}
         open={priceModalVisible}
         onCancel={() => setPriceModalVisible(false)}
         onOk={handlePriceUpdateSubmit}
@@ -1337,13 +1337,13 @@ const ManagePage: React.FC = () => {
       >
         <Form layout="vertical">
           <Form.Item
-            label="当前广告位"
+            label={t('manage.priceModal.currentAdSpace')}
             className="price-form-item"
           >
             <Input value={currentAdSpace?.name} disabled />
           </Form.Item>
           <Form.Item
-            label="当前价格 (SUI/天)"
+            label={t('manage.priceModal.currentPrice')}
             className="price-form-item"
           >
             <Input
@@ -1352,7 +1352,7 @@ const ManagePage: React.FC = () => {
             />
           </Form.Item>
           <Form.Item
-            label="新价格 (SUI/天)"
+            label={t('manage.priceModal.newPrice')}
             className="price-form-item"
           >
             <InputNumber

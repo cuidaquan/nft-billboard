@@ -260,6 +260,97 @@ export class WalrusService {
   }
 
   /**
+   * 删除Walrus上的内容
+   *
+   * 根据Walrus SDK文档，删除Blob需要使用executeDeleteBlobTransaction方法，
+   * 该方法接收blobObjectId和signer参数。
+   *
+   * DeleteBlobOptions接口定义：
+   * ```typescript
+   * interface DeleteBlobOptions {
+   *   blobObjectId: string; // 必须是从URL中解析出的对象ID
+   * }
+   * ```
+   *
+   * 参考文档：
+   * - https://sdk.mystenlabs.com/typedoc/classes/_mysten_walrus.WalrusClient.html#executedeleteblobtransaction
+   * - https://sdk.mystenlabs.com/typedoc/interfaces/_mysten_walrus.DeleteBlobOptions.html
+   *
+   * 使用示例：
+   * ```typescript
+   * const { digest } = await client.executeDeleteBlobTransaction({ blobObjectId, signer });
+   * ```
+   *
+   * @param contentUrl 内容URL或blobId
+   * @param signer 签名对象
+   * @returns Promise<boolean> 操作成功返回true，失败抛出异常
+   */
+  async deleteBlob(
+    contentUrl: string,
+    signer: Signer | CustomSigner
+  ): Promise<boolean> {
+    try {
+      console.log(`正在删除Walrus内容，URL: ${contentUrl}`);
+
+      // 从URL中提取对象ID（如果传入的是URL）
+      // 使用extractObjectIdFromUrl方法解析URL中的对象ID
+      // 该方法会处理以下情况：
+      // 1. 直接传入对象ID（以0x开头或64位十六进制字符串）
+      // 2. 传入完整的Walrus URL，如https://walrus-aggregator.testnet.sui.io/0x123...
+      // 3. 从URL路径的最后一部分提取对象ID
+      const blobObjectId = this.extractObjectIdFromUrl(contentUrl);
+
+      // 如果无法从URL中提取对象ID，则使用原始输入（可能是直接的对象ID）
+      const finalBlobId = blobObjectId || contentUrl;
+
+      // 验证最终的blobObjectId格式是否正确
+      if (!finalBlobId.startsWith('0x') && !/^[0-9a-fA-F]{64}$/.test(finalBlobId)) {
+        throw new Error(`无效的Blob对象ID: ${finalBlobId}。对象ID必须是以0x开头的64位十六进制字符串。`);
+      }
+
+      console.log(`使用blobObjectId: ${finalBlobId} 执行删除操作`);
+
+      // 准备执行删除交易
+      console.log('准备执行删除Blob交易，参数:', {
+        blobObjectId: finalBlobId,
+        owner: signer.toSuiAddress()
+      });
+
+      // 直接使用executeDeleteBlobTransaction方法执行删除交易
+      // 该方法需要一个包含blobObjectId和signer的对象
+      const result = await this.client.executeDeleteBlobTransaction({
+        blobObjectId: finalBlobId,
+        signer: signer as any
+      });
+
+      if (!result || !result.digest) {
+        throw new Error('删除Walrus内容失败：未获取到有效的响应');
+      }
+
+      console.log('Walrus内容删除成功，交易摘要:', result.digest);
+      return true;
+    } catch (error) {
+      console.error('删除Walrus内容失败:', error);
+
+      // 检查是否是权限错误
+      if (error instanceof Error &&
+          (error.message.includes('authority') ||
+           error.message.includes('permission') ||
+           error.message.includes('owner'))) {
+        throw new Error(`删除Walrus内容失败：您没有权限删除此Blob。只有Blob的所有者才能删除其内容。`);
+      }
+
+      // 检查是否是gas不足错误
+      if (error instanceof Error && error.message.includes('gas')) {
+        throw new Error(`删除Walrus内容失败：Gas不足。请确保您的钱包中有足够的SUI代币支付交易费用。`);
+      }
+
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      throw new Error(`删除Walrus内容失败: ${errorMessage}`);
+    }
+  }
+
+  /**
    * 延长Walrus存储期限
    *
    * 根据Walrus SDK文档，支持两种方式延长存储期限：

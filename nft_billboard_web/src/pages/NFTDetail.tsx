@@ -10,6 +10,7 @@ import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@
 import './NFTDetail.scss';
 import { Link } from 'react-router-dom';
 import MediaContent from '../components/nft/MediaContent';
+import UpdateAdContent from '../components/nft/UpdateAdContent';
 import { walrusService } from '../utils/walrus';
 
 const { Title, Paragraph, Text } = Typography;
@@ -31,7 +32,6 @@ const NFTDetailPage: React.FC = () => {
   // 模态框状态
   const [updateContentVisible, setUpdateContentVisible] = useState<boolean>(false);
   const [renewLeaseVisible, setRenewLeaseVisible] = useState<boolean>(false);
-  const [contentUrl, setContentUrl] = useState<string>('');
   const [renewDays, setRenewDays] = useState<number>(30);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [calculatingPrice, setCalculatingPrice] = useState<boolean>(false);
@@ -41,7 +41,7 @@ const NFTDetailPage: React.FC = () => {
   const formatDateWithTime = (timestamp: string): string => {
     try {
       const date = new Date(timestamp);
-      if (isNaN(date.getTime())) return '无效日期';
+      if (isNaN(date.getTime())) return t('nftDetail.messages.invalidDate');
 
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -51,7 +51,7 @@ const NFTDetailPage: React.FC = () => {
 
       return `${year}/${month}/${day} ${hours}:${minutes}`;
     } catch (error) {
-      return '无效日期';
+      return t('nftDetail.messages.invalidDate');
     }
   };
 
@@ -74,8 +74,6 @@ const NFTDetailPage: React.FC = () => {
 
         if (!nftDetails) {
           setError('未找到NFT详情');
-        } else {
-          setContentUrl(nftDetails.contentUrl);
         }
       } catch (err) {
         console.error('获取NFT详情失败:', err);
@@ -117,7 +115,10 @@ const NFTDetailPage: React.FC = () => {
             // 如果余额不足，显示警告
             if (balanceValue < priceValue) {
               message.warning({
-                content: `余额不足！需要 ${formatSuiAmount(price)} SUI，但钱包只有 ${formatSuiAmount(totalBalance)} SUI`,
+                content: t('nftDetail.transaction.insufficientBalance', {
+                  price: formatSuiAmount(price),
+                  balance: formatSuiAmount(totalBalance)
+                }),
                 duration: 5
               });
             }
@@ -137,112 +138,25 @@ const NFTDetailPage: React.FC = () => {
     fetchPrice();
   }, [nft, renewDays, renewLeaseVisible, account, suiClient]);
 
-  // 更新广告内容
-  const handleUpdateContent = async () => {
-    if (!nft || !account) return;
-
+  // 处理更新广告内容成功
+  const handleUpdateContentSuccess = async () => {
     try {
-      setSubmitting(true);
+      // 关闭对话框
+      setUpdateContentVisible(false);
 
-      // 创建更新参数
-      const params = {
-        nftId: nft.id,
-        contentUrl: contentUrl
-      };
+      // 重新获取NFT详情
+      if (id) {
+        setLoading(true);
+        const updatedNft = await getNFTDetails(id);
+        setNft(updatedNft);
+        setLoading(false);
 
-      // 显示交易执行中状态
-      message.loading({
-        content: '正在更新广告内容...',
-        key: 'updateContent',
-        duration: 0
-      });
-
-      // 导入创建更新广告内容交易的函数
-      const { createUpdateAdContentTx } = await import('../utils/contract');
-
-      // 创建交易
-      const txb = createUpdateAdContentTx(params);
-
-      // 执行交易
-      await signAndExecute({
-        transaction: txb
-      });
-
-      // 交易已提交，显示提交成功消息
-      message.success({
-        content: '更新交易已提交',
-        key: 'updateContent',
-        duration: 2
-      });
-
-      message.loading({
-        content: '等待交易确认...',
-        key: 'confirmUpdate',
-        duration: 0
-      });
-
-      // 使用轮询方式检查交易结果，最多尝试5次
-      let attempts = 0;
-      const maxAttempts = 5;
-      let success = false;
-
-      while (attempts < maxAttempts && !success) {
-        attempts++;
-        // 增加等待时间
-        const delay = 2000 * attempts;
-        console.log(`等待更新确认，尝试 ${attempts}/${maxAttempts}，等待 ${delay}ms...`);
-
-        // 等待一段时间再检查
-        await new Promise(resolve => setTimeout(resolve, delay));
-
-        try {
-          // 从链上获取最新的NFT数据
-          const updatedNft = await getNFTDetails(nft.id);
-
-          // 检查内容是否已更新
-          if (updatedNft && updatedNft.contentUrl === contentUrl) {
-            success = true;
-            console.log('成功确认广告内容更新');
-
-            // 更新本地数据
-            setNft(updatedNft);
-
-            // 显示成功确认消息
-            message.success({
-              content: '广告内容更新成功！',
-              key: 'confirmUpdate',
-              duration: 2
-            });
-
-            // 关闭对话框
-            setUpdateContentVisible(false);
-          } else {
-            console.log('尚未检测到内容更新，将继续重试');
-          }
-        } catch (err) {
-          console.warn(`检查交易结果时出错 (尝试 ${attempts}): `, err);
-        }
+        // 显示成功消息
+        message.success(t('nftDetail.messages.contentUpdateSuccess'));
       }
-
-      // 如果无法确认成功，但交易已提交，仍视为部分成功
-      if (!success) {
-        message.info({
-          content: '交易已提交，但无法立即确认结果。请稍后刷新页面查看更新。',
-          key: 'confirmUpdate',
-          duration: 5
-        });
-
-        // 关闭更新对话框
-        setUpdateContentVisible(false);
-      }
-    } catch (err) {
-      console.error('更新内容失败:', err);
-      message.error({
-        content: '更新广告内容失败，请检查钱包并重试',
-        key: 'updateContent'
-      });
-    } finally {
-      setSubmitting(false);
+    } catch (error) {
+      console.error('重新获取NFT详情失败:', error);
+      message.info(t('nftDetail.messages.contentUpdatePartialSuccess'));
     }
   };
 
@@ -262,7 +176,7 @@ const NFTDetailPage: React.FC = () => {
 
     // 检查NFT是否已过期
     if (isExpired) {
-      message.error('此NFT已过期，根据合约规定，不能对已过期的NFT进行续租。');
+      message.error(t('nftDetail.transaction.expiredNft'));
       return;
     }
 
@@ -271,12 +185,12 @@ const NFTDetailPage: React.FC = () => {
 
       // 验证续租条件
       if (!renewDays || renewDays <= 0) {
-        message.error('请选择有效的续租天数');
+        message.error(t('nftDetail.transaction.invalidDays'));
         return;
       }
 
       if (!renewPrice || Number(renewPrice) <= 0) {
-        message.error('无效的续租价格，请刷新页面重试');
+        message.error(t('nftDetail.transaction.invalidPrice'));
         return;
       }
 
@@ -292,7 +206,7 @@ const NFTDetailPage: React.FC = () => {
 
       // 先从链上获取最新的NFT详细信息，确保我们有完整的数据
       message.loading({
-        content: '正在获取NFT详细信息...',
+        content: t('nftDetail.transaction.fetchingDetails'),
         key: 'fetchNftDetails',
         duration: 0
       });
@@ -302,11 +216,11 @@ const NFTDetailPage: React.FC = () => {
         const latestNft = await getNFTDetails(nft.id);
 
         if (!latestNft) {
-          throw new Error('无法获取NFT详细信息');
+          throw new Error(t('nftDetail.transaction.fetchFailed'));
         }
 
         message.success({
-          content: '获取NFT详细信息成功',
+          content: t('nftDetail.transaction.fetchSuccess'),
           key: 'fetchNftDetails',
           duration: 1
         });
@@ -331,7 +245,7 @@ const NFTDetailPage: React.FC = () => {
             // 如果延长存储期限失败，立即中止续租操作
             if (!storageExtended) {
               message.error({
-                content: '延长Walrus存储期限失败，续租操作已取消。请稍后再试。',
+                content: t('nftDetail.transaction.extendWalrusFailed'),
                 key: 'extendWalrus',
                 duration: 5
               });
@@ -342,7 +256,7 @@ const NFTDetailPage: React.FC = () => {
             // 捕获延长存储期限过程中的任何错误
             console.error('延长Walrus存储期限时发生错误:', walrusError);
             message.error({
-              content: '延长Walrus存储期限失败，续租操作已取消。请稍后再试。',
+              content: t('nftDetail.transaction.extendWalrusFailed'),
               key: 'extendWalrus',
               duration: 5
             });
@@ -359,7 +273,7 @@ const NFTDetailPage: React.FC = () => {
       } catch (error) {
         console.error('获取NFT详细信息失败:', error);
         message.error({
-          content: '获取NFT详细信息失败，无法确定存储类型。继续执行续租操作。',
+          content: t('nftDetail.transaction.fetchFailed'),
           key: 'fetchNftDetails',
           duration: 3
         });
@@ -367,7 +281,7 @@ const NFTDetailPage: React.FC = () => {
 
       // 显示交易执行中状态
       message.loading({
-        content: '正在续租NFT...',
+        content: t('nftDetail.transaction.renewingNft'),
         key: 'renewNft',
         duration: 0
       });
@@ -385,7 +299,7 @@ const NFTDetailPage: React.FC = () => {
 
         // 交易已提交，显示提交成功消息
         message.success({
-          content: '续租交易已提交',
+          content: t('nftDetail.transaction.renewSubmitted'),
           key: 'renewNft',
           duration: 2
         });
@@ -400,25 +314,25 @@ const NFTDetailPage: React.FC = () => {
       console.error('续租失败:', err);
 
       // 解析错误消息
-      let errorMsg = '续租失败，请检查钱包并重试';
+      let errorMsg = t('nftDetail.transaction.renewFailed');
 
       // 尝试从错误对象中提取更详细的信息
       if (err instanceof Error) {
         if (err.message.includes('余额不足') || err.message.includes('budget')) {
-          errorMsg = '续租失败：钱包余额不足，请确保有足够的SUI支付租金';
+          errorMsg = t('nftDetail.transaction.renewFailedInsufficientBalance');
         } else if (err.message.includes('MoveAbort') && err.message.includes('renew_lease')) {
           if (err.message.includes('6)')) {
-            errorMsg = '续租失败：余额不足或价格计算错误';
+            errorMsg = t('nftDetail.transaction.renewFailedInsufficientBalance');
           } else if (err.message.includes('2)')) {
-            errorMsg = '续租失败：NFT验证失败或租期计算错误';
+            errorMsg = t('nftDetail.transaction.renewFailedContractError');
           } else {
-            errorMsg = `续租失败：合约执行错误 (${err.message})`;
+            errorMsg = `${t('nftDetail.transaction.renewFailedContractError')} (${err.message})`;
           }
         } else if (err.message.includes('用户取消了交易')) {
-          errorMsg = '您已取消续租操作';
+          errorMsg = t('nftDetail.transaction.renewFailedUserCancelled');
         } else {
           // 提取错误消息的关键部分
-          errorMsg = `续租失败: ${err.message.slice(0, 100)}${err.message.length > 100 ? '...' : ''}`;
+          errorMsg = `${t('nftDetail.transaction.renewFailed')}: ${err.message.slice(0, 100)}${err.message.length > 100 ? '...' : ''}`;
         }
       }
 
@@ -438,7 +352,7 @@ const NFTDetailPage: React.FC = () => {
 
     try {
       message.loading({
-        content: '正在延长Walrus存储期限...',
+        content: t('nftDetail.transaction.extendingWalrus'),
         key: 'extendWalrus',
         duration: 0
       });
@@ -535,7 +449,7 @@ const NFTDetailPage: React.FC = () => {
       });
 
       message.success({
-        content: 'Walrus存储期限延长成功！',
+        content: t('nftDetail.transaction.extendWalrusSuccess'),
         key: 'extendWalrus',
         duration: 2
       });
@@ -564,7 +478,7 @@ const NFTDetailPage: React.FC = () => {
   // 等待交易确认的辅助函数
   const waitForTransactionConfirmation = async (originalNft: BillboardNFT) => {
     message.loading({
-      content: '等待交易确认...',
+      content: t('walrusUpload.transaction.waiting'),
       key: 'confirmRenew',
       duration: 0
     });
@@ -603,7 +517,7 @@ const NFTDetailPage: React.FC = () => {
 
           // 显示成功确认消息
           message.success({
-            content: 'NFT续租成功！',
+            content: t('nftDetail.transaction.renewSuccess'),
             key: 'confirmRenew',
             duration: 2
           });
@@ -624,7 +538,7 @@ const NFTDetailPage: React.FC = () => {
     // 如果无法确认成功，但交易已提交，仍视为部分成功
     if (!success) {
       message.info({
-        content: '交易已提交，但无法立即确认结果。请稍后刷新页面查看更新。',
+        content: t('nftDetail.transaction.renewPartialSuccess'),
         key: 'confirmRenew',
         duration: 5
       });
@@ -759,7 +673,7 @@ const NFTDetailPage: React.FC = () => {
                         // 检查NFT是否已过期，由于合约限制，暂时只允许未过期的NFT续租
                         if (nftStatus.status === 'expired') {
                           message.warning({
-                            content: '由于合约限制，当前只能对未过期的NFT进行续租。此NFT已过期，请联系管理员。',
+                            content: t('nftDetail.transaction.expiredNftWarning'),
                             duration: 5
                           });
                           return;
@@ -791,36 +705,16 @@ const NFTDetailPage: React.FC = () => {
         title={t('nftDetail.modals.updateContent.title')}
         open={updateContentVisible}
         onCancel={() => setUpdateContentVisible(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setUpdateContentVisible(false)}>
-            {t('common.buttons.cancel')}
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={submitting}
-            onClick={handleUpdateContent}
-          >
-            {t('common.buttons.update')}
-          </Button>
-        ]}
+        footer={null}
+        width={800}
       >
-        <Form layout="vertical">
-          <Form.Item
-            label={t('nftDetail.fields.contentUrl')}
-            required
-            rules={[{ required: true, message: t('nftDetail.modals.updateContent.required') }]}
-          >
-            <Input
-              placeholder={t('nftDetail.modals.updateContent.placeholder')}
-              value={contentUrl}
-              onChange={e => setContentUrl(e.target.value)}
-            />
-          </Form.Item>
-          <Paragraph type="secondary">
-            {t('nftDetail.modals.updateContent.description')}
-          </Paragraph>
-        </Form>
+        {nft && (
+          <UpdateAdContent
+            nft={nft}
+            onSuccess={handleUpdateContentSuccess}
+            onCancel={() => setUpdateContentVisible(false)}
+          />
+        )}
       </Modal>
 
       {/* 续租NFT模态框 */}

@@ -95,11 +95,14 @@ const AdSpaceForm: React.FC<AdSpaceFormProps> = ({
     const priceInMist = (Number(totalPrice) * 1000000000).toString();
     console.log('提交的价格 (MIST):', priceInMist);
 
+    // 如果projectUrl为空，则使用"#"作为默认值
+    const projectUrl = values.projectUrl ? values.projectUrl : "#";
+
     const params: PurchaseAdSpaceParams = {
       adSpaceId: adSpace.id,
       contentUrl: contentParams.url,
       brandName: values.brandName,
-      projectUrl: values.projectUrl,
+      projectUrl: projectUrl,
       leaseDays: values.leaseDays,
       price: priceInMist,
       blobId: contentParams.blobId,
@@ -313,7 +316,6 @@ const AdSpaceForm: React.FC<AdSpaceFormProps> = ({
               name="projectUrl"
               label={t('purchase.form.projectUrl')}
               rules={[
-                { required: true, message: t('purchase.form.projectUrlRequired') },
                 { type: 'url', message: t('purchase.form.projectUrlInvalid') }
               ]}
               extra={t('purchase.form.projectUrlExtra')}

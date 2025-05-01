@@ -250,7 +250,22 @@
         "title": "Update Ad Content",
         "placeholder": "Enter content URL",
         "required": "Please enter content URL",
-        "description": "Please enter a new ad content URL. This URL should point to an image or other media content."
+        "description": "Please enter a new ad content URL. This URL should point to an image or other media content.",
+        "storageMode": "Select Content Source",
+        "externalUrl": "External URL",
+        "walrusUpload": "Walrus Upload",
+        "currentContent": "Current Ad Content",
+        "source": "Source",
+        "walrusStorage": "Walrus Storage",
+        "externalStorage": "External URL",
+        "newContent": "New Ad Content",
+        "externalUrlLabel": "External URL",
+        "externalUrlHelp": "Please enter a valid image or video URL",
+        "preview": "New Content Preview",
+        "deleteWarning": {
+          "title": "Notice",
+          "description": "You are switching from Walrus storage to external URL. After updating, the original Walrus content will be deleted, potentially refunding some storage fees."
+        }
       },
       "renewLease": {
         "title": "Renew NFT Lease",
@@ -261,11 +276,41 @@
         "priceLabel": "Renewal Price: ",
         "description": "Renewal will extend the NFT lease period. Price is dynamically calculated by the smart contract based on renewal days. Renewal range: 1-365 days."
       }
+    },
+    "transaction": {
+      "fetchingDetails": "Fetching NFT details...",
+      "fetchSuccess": "NFT details fetched successfully",
+      "fetchFailed": "Failed to fetch NFT details, unable to determine storage type. Continuing with renewal operation.",
+      "extendingWalrus": "Extending Walrus storage duration...",
+      "extendWalrusFailed": "Failed to extend Walrus storage duration, renewal operation cancelled. Please try again later.",
+      "extendWalrusSuccess": "Walrus storage duration extended successfully!",
+      "renewingNft": "Renewing NFT...",
+      "renewSubmitted": "Renewal transaction submitted",
+      "renewSuccess": "NFT renewed successfully!",
+      "renewPartialSuccess": "Transaction submitted, but could not immediately confirm the result. Please refresh the page later to see the update.",
+      "renewFailed": "Renewal failed, please check your wallet and try again",
+      "renewFailedInsufficientBalance": "Renewal failed: Insufficient wallet balance, please ensure you have enough SUI to pay for the lease",
+      "renewFailedContractError": "Renewal failed: Contract execution error",
+      "renewFailedUserCancelled": "You have cancelled the renewal operation",
+      "invalidDays": "Please select valid renewal days",
+      "invalidPrice": "Invalid renewal price, please refresh the page and try again",
+      "insufficientBalance": "Insufficient balance! Need {price} SUI, but wallet only has {balance} SUI",
+      "expiredNft": "This NFT has expired. According to contract rules, expired NFTs cannot be renewed.",
+      "expiredNftWarning": "Due to contract limitations, currently only non-expired NFTs can be renewed. This NFT has expired, please contact the administrator."
+    },
+    "messages": {
+      "contentUpdateSuccess": "Ad content updated successfully",
+      "contentUpdatePartialSuccess": "Ad content has been updated, but unable to refresh page data. Please refresh the page manually.",
+      "invalidDate": "Invalid date"
     }
   },
   "manage": {
     "title": "Management Center",
     "subtitle": "Manage ad spaces and platform settings",
+    "errors": {
+      "accessDenied": "Access Denied",
+      "accessDeniedDesc": "You do not have permission to access the management center. Only registered game developers or platform administrators can access this page."
+    },
     "tabs": {
       "createAdSpace": "Create Ad Space",
       "myAdSpaces": "My Ad Spaces",
@@ -274,7 +319,17 @@
       "platformManage": "Platform Management"
     },
     "buttons": {
-      "changePrice": "Change Price"
+      "changePrice": "Change Price",
+      "updatePrice": "Update Price",
+      "deleteAdSpace": "Delete Ad Space",
+      "waitingConfirmation": "Transaction submitted, waiting for confirmation..."
+    },
+    "priceModal": {
+      "title": "Update Ad Space Price",
+      "currentAdSpace": "Current Ad Space",
+      "currentPrice": "Current Price (SUI/day)",
+      "newPrice": "New Price (SUI/day)",
+      "priceUpdateSuccess": "Ad space price updated successfully"
     },
     "confirmDelete": {
       "title": "Are you sure you want to delete this ad space?",
@@ -325,7 +380,12 @@
       "emptyDesc": "Create your first ad space and start earning SUI tokens",
       "activeNFT": "Active NFT",
       "waitingContent": "Waiting for Ad Content",
-      "listTitle": "Your Created Ad Spaces List"
+      "listTitle": "Your Created Ad Spaces List",
+      "deleteSuccess": "Ad space deleted successfully",
+      "refreshFailed": "Failed to refresh ad space list, please refresh the page manually",
+      "deleteFailed": "Failed to delete ad space",
+      "priceUpdateFailed": "Failed to update price",
+      "invalidPrice": "Please enter a valid price"
     },
     "registerDev": {
       "title": "Register Game Developer",
@@ -380,7 +440,8 @@
         "listUpdated": "Developer list updated",
         "manuallyRemoved": "Developer manually removed from the list",
         "manuallyUpdated": "Unable to get the latest list from the contract, manually updated",
-        "removeFailed": "Failed to remove game developer"
+        "removeFailed": "Failed to remove game developer",
+        "manuallyAdded": "Developer manually added to the list"
       }
     },
     "manageDev": {
@@ -404,6 +465,26 @@
       "fileTooLarge": "File size exceeds limit, maximum allowed is 10MB, current file size is {size}MB",
       "connectWalletError": "Please connect wallet first",
       "uploadSuccess": "File uploaded successfully"
+    },
+    "walrusUpdateWarning": "You are uploading new ad content to Walrus. After the update, the original Walrus content will be deleted, potentially refunding some storage fees.",
+    "externalToWalrusWarning": "You are switching from external URL to Walrus upload. The uploaded content will be stored on Walrus and storage fees will be charged based on your lease period.",
+    "externalUrlWarning": "You are using an external URL. Please ensure your URL is accessible and the content complies with platform regulations.",
+    "noticeTitle": "Notice",
+    "deleteWalrus": {
+      "deleting": "Deleting original Walrus content...",
+      "success": "Original Walrus content deleted",
+      "error": "Failed to delete original Walrus content, but update operation completed"
+    },
+    "validation": {
+      "invalidUrl": "Please enter a valid URL",
+      "uploadFirst": "Please upload a file to Walrus first"
+    },
+    "transaction": {
+      "updating": "Updating ad content...",
+      "submitted": "Update transaction submitted",
+      "waiting": "Waiting for transaction confirmation...",
+      "success": "Ad content updated successfully!",
+      "partialSuccess": "Transaction submitted, but could not immediately confirm the result. Please refresh the page later to see the update."
     },
     "progress": {
       "uploading": "Uploading",
