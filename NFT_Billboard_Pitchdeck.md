@@ -1,9 +1,9 @@
-# NFT Billboard - 重新定义区块链广告的未来
+# NFT Billboards - 重新定义区块链广告的未来
 ## Sui Overflow 2025 黑客松 Programmable Storage 赛道项目
 
 ## 项目概述
 
-NFT Billboard是一个革命性的区块链广告解决方案，将虚拟世界中的广告位转化为可交易的NFT资产。我们利用Sui区块链和Walrus存储网络，实现广告内容的动态更新，适配链游、元宇宙等多种虚拟场景。
+NFT Billboards是一个革命性的区块链广告解决方案，将虚拟世界中的广告位转化为可交易的NFT资产。我们利用Sui区块链和Walrus存储网络，实现广告内容的动态更新，适配链游、元宇宙等多种虚拟场景。
 
 ## 路线图
 
@@ -77,5 +77,6 @@ NFT Billboard是一个革命性的区块链广告解决方案，将虚拟世界�
 
 ## 联系方式
 - GitHub：https://github.com/cuidaquan/nft-billboard
-- 项目网站：https://nftbillboard.io
+- 项目网站：https://www.nftbillboards.io
+- 联系我们：https://x.com/NFTBillboardsio
 

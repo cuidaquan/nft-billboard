@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "NFT Billboard",
-    "slogan": "NFT Billboard - 重新定义区块链广告的未来",
+    "name": "NFT Billboards",
+    "slogan": "NFT Billboards - 重新定义区块链广告的未来",
     "shortName": "链上广告牌"
   },
   "header": {
@@ -11,7 +11,7 @@
     "manage": "管理"
   },
   "footer": {
-    "copyright": "链上动态广告牌NFT系统 © {{year}}",
+    "copyright": "链上动态NFT广告牌系统 © {{year}}",
     "links": {
       "sui": "Sui区块链",
       "github": "GitHub仓库",
@@ -21,7 +21,7 @@
   },
   "home": {
     "hero": {
-      "title": "NFT Billboard",
+      "title": "NFT Billboards",
       "subtitle": "革命性的去中心化广告解决方案：将您的广告内容永久铸造到区块链上，实现透明、安全、可验证的链上广告展示与交易",
       "browseButton": "浏览广告位",
       "myNFTsButton": "我的 NFT"
@@ -79,7 +79,7 @@
     },
     "cta": {
       "title": "准备好开始您的区块链广告之旅了吗？",
-      "subtitle": "立即加入 NFT Billboard，体验区块链赋能的全新广告方式",
+      "subtitle": "立即加入 NFT Billboards，体验区块链赋能的全新广告方式",
       "button": "立即开始浏览"
     }
   },

@@ -1,8 +1,8 @@
-# NFT Billboard - 前端应用
+# NFT Billboards - 前端应用
 
 ## 概述
 
-NFT Billboard前端应用是一个基于React和TypeScript构建的现代化Web应用，为用户提供直观的界面来浏览、购买和管理区块链广告位NFT。该应用与Sui区块链智能合约无缝集成，支持钱包连接、交易签名和NFT内容管理。
+NFT Billboards前端应用是一个基于React和TypeScript构建的现代化Web应用，为用户提供直观的界面来浏览、购买和管理区块链广告位NFT。该应用与Sui区块链智能合约无缝集成，支持钱包连接、交易签名和NFT内容管理。
 
 ## 核心功能
 

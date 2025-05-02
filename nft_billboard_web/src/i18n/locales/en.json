@@ -1,8 +1,8 @@
 {
   "app": {
-    "name": "NFT Billboard",
-    "slogan": "NFT Billboard - Redefining the Future of Blockchain Advertising",
-    "shortName": "NFT Billboard"
+    "name": "NFT Billboards",
+    "slogan": "NFT Billboards - Redefining the Future of Blockchain Advertising",
+    "shortName": "NFT Billboards"
   },
   "header": {
     "home": "Home",
@@ -11,7 +11,7 @@
     "manage": "Manage"
   },
   "footer": {
-    "copyright": "NFT Billboard System © {{year}}",
+    "copyright": "NFT Billboards System © {{year}}",
     "links": {
       "sui": "Sui Blockchain",
       "github": "GitHub Repository",
@@ -21,7 +21,7 @@
   },
   "home": {
     "hero": {
-      "title": "NFT Billboard",
+      "title": "NFT Billboards",
       "subtitle": "Revolutionary decentralized advertising solution: Permanently mint your ad content on the blockchain, enabling transparent, secure, and verifiable on-chain ad display and transactions",
       "browseButton": "Browse Ad Spaces",
       "myNFTsButton": "My NFTs"
@@ -79,7 +79,7 @@
     },
     "cta": {
       "title": "Ready to Start Your Blockchain Advertising Journey?",
-      "subtitle": "Join NFT Billboard now and experience the new advertising method empowered by blockchain",
+      "subtitle": "Join NFT Billboards now and experience the new advertising method empowered by blockchain",
       "button": "Start Browsing Now"
     }
   },

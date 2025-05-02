@@ -1,12 +1,12 @@
-# NFT Billboard - 链上动态NFT广告牌系统
+# NFT Billboards - 链上动态NFT广告牌系统
 
 ## 项目推介文档
 
-[NFT Billboard - 重新定义区块链广告的未来](https://docs.google.com/presentation/d/1p4-J6uv0tInVwv_JEsSo3fC_VnMLQBheGqZY2nNObx0/edit?usp=sharing)
+[NFT Billboards - 重新定义区块链广告的未来](https://docs.google.com/presentation/d/1p4-J6uv0tInVwv_JEsSo3fC_VnMLQBheGqZY2nNObx0/edit?usp=sharing)
 
 ## 项目概述
 
-NFT Billboard是一个革命性的区块链广告解决方案，将虚拟世界中的广告位转化为可交易的NFT资产。我们利用Sui区块链的对象模型，结合Walrus去中心化存储网络，实现了广告内容的动态更新和安全存储。此广告牌系统适配包括链游、元宇宙、Web3应用等多种虚拟世界场景。
+NFT Billboards是一个革命性的区块链广告解决方案，将虚拟世界中的广告位转化为可交易的NFT资产。我们利用Sui区块链的对象模型，结合Walrus去中心化存储网络，实现了广告内容的动态更新和安全存储。此广告牌系统适配包括链游、元宇宙、Web3应用等多种虚拟世界场景。
 
 ### 核心价值
 
