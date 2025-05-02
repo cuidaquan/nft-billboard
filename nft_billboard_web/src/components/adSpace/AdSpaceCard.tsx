@@ -224,7 +224,7 @@ const AdSpaceCard: React.FC<AdSpaceCardProps> = ({ adSpace, userRole, creatorAdd
           ) : (
             <div className="empty-ad-space-placeholder">
               <ColumnWidthOutlined />
-              <Text>{adSpace.dimension.width} x {adSpace.dimension.height}</Text>
+              <Text>{adSpace.aspectRatio || '16:9'}</Text>
               <Text className="empty-text">{t('adSpaces.status.waiting')}</Text>
             </div>
           )}
@@ -251,7 +251,9 @@ const AdSpaceCard: React.FC<AdSpaceCardProps> = ({ adSpace, userRole, creatorAdd
 
         <div className="info-item">
           <ColumnWidthOutlined />
-          <Text>{t('manage.createAdSpace.form.dimension')}: {adSpace.dimension.width} x {adSpace.dimension.height}</Text>
+          <Text>
+            {`${t('manage.createAdSpace.form.dimension')}: ${adSpace.aspectRatio || '16:9'}`}
+          </Text>
         </div>
 
         <div className="info-item">

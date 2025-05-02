@@ -90,7 +90,7 @@ const AdSpaceItem: React.FC<AdSpaceItemProps> = ({
           ) : (
             <div className="empty-ad-space-placeholder">
               <ColumnWidthOutlined />
-              <Text>{adSpace.dimension.width} x {adSpace.dimension.height}</Text>
+              <Text>{adSpace.aspectRatio || '16:9'}</Text>
               <Text>{t('adSpaces.status.waiting')}</Text>
             </div>
           )}
@@ -111,7 +111,9 @@ const AdSpaceItem: React.FC<AdSpaceItemProps> = ({
           </div>
           <div className="info-item">
             <span className="label">{t('manage.createAdSpace.form.dimension')}:</span>
-            <span className="value">{`${adSpace.dimension.width}x${adSpace.dimension.height}`}</span>
+            <span className="value">
+              {adSpace.aspectRatio || '16:9'}
+            </span>
           </div>
           <div className="info-item">
             <span className="label">{t('manage.createAdSpace.form.price')}:</span>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Tabs, Form, Input, Button, InputNumber, Select, message, Alert, Card, List, Empty, Modal, Popconfirm, Row, Col, Spin, Tooltip, Tag } from 'antd';
+import { Typography, Tabs, Form, Input, Button, InputNumber, Select, message, Alert, Card, List, Empty, Modal, Popconfirm, Row, Col, Spin, Tooltip, Tag, Radio } from 'antd';
 import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 import { useTranslation } from 'react-i18next';
 import { CreateAdSpaceParams, UserRole, RegisterGameDevParams, RemoveGameDevParams, AdSpace, BillboardNFT } from '../types';
@@ -188,32 +188,26 @@ const ManagePage: React.FC = () => {
       console.log('创建广告位，输入参数:', values);
 
       // 验证必填字段
-      if (!values.gameId || !values.location || !values.size || !values.price) {
+      if (!values.gameId || !values.location || !values.price) {
         throw new Error(t('manage.createAdSpace.form.allFieldsRequired'));
       }
 
-      // 尺寸验证 - 确保格式符合要求
-      if (values.size !== '小' && values.size !== '中' && values.size !== '大' && values.size !== '超大') {
-        throw new Error(t('manage.createAdSpace.form.invalidDimension'));
-      }
-
-      // 将尺寸转换为宽x高格式
+      // 获取尺寸值
       let sizeFormat = '';
-      switch (values.size) {
-        case '小':
-          sizeFormat = '320x100';
-          break;
-        case '中':
-          sizeFormat = '320x250';
-          break;
-        case '大':
-          sizeFormat = '728x90';
-          break;
-        case '超大':
-          sizeFormat = '970x250';
-          break;
-        default:
-          sizeFormat = '300x250'; // 默认尺寸
+      if (values.sizeType === 'standard') {
+        // 验证标准比例
+        if (!values.size) {
+          throw new Error(t('manage.createAdSpace.form.dimensionRequired'));
+        }
+        sizeFormat = values.size; // 直接使用选择的标准比例
+      } else {
+        // 构建自定义比例字符串
+        const width = values.customSize?.width;
+        const height = values.customSize?.height;
+        if (!width || !height) {
+          throw new Error(t('manage.createAdSpace.form.invalidCustomDimension'));
+        }
+        sizeFormat = `${width}:${height}`;
       }
 
       // 价格验证 - 确保价格大于0
@@ -1127,16 +1121,61 @@ const ManagePage: React.FC = () => {
                       </Form.Item>
 
                       <Form.Item
-                        name="size"
-                        label={t('manage.createAdSpace.form.dimension')}
-                        rules={[{ required: true, message: t('manage.createAdSpace.form.dimensionRequired') }]}
+                        name="sizeType"
+                        label={t('manage.createAdSpace.form.dimensionType')}
+                        initialValue="standard"
                       >
-                        <Select placeholder={t('manage.createAdSpace.form.dimensionPlaceholder')}>
-                          <Option value="小">{t('common.dimensions.small')} (320x100)</Option>
-                          <Option value="中">{t('common.dimensions.medium')} (320x250)</Option>
-                          <Option value="大">{t('common.dimensions.large')} (728x90)</Option>
-                          <Option value="超大">{t('common.dimensions.extraLarge')} (970x250)</Option>
-                        </Select>
+                        <Radio.Group>
+                          <Radio.Button value="standard">{t('manage.createAdSpace.form.standardRatio')}</Radio.Button>
+                          <Radio.Button value="custom">{t('manage.createAdSpace.form.customRatio')}</Radio.Button>
+                        </Radio.Group>
+                      </Form.Item>
+
+                      <Form.Item
+                        noStyle
+                        shouldUpdate={(prevValues, currentValues) => prevValues.sizeType !== currentValues.sizeType}
+                      >
+                        {({ getFieldValue }) =>
+                          getFieldValue('sizeType') === 'standard' ? (
+                            <Form.Item
+                              name="size"
+                              label={t('manage.createAdSpace.form.dimension')}
+                              rules={[{ required: true, message: t('manage.createAdSpace.form.dimensionRequired') }]}
+                            >
+                              <Select placeholder={t('manage.createAdSpace.form.dimensionPlaceholder')}>
+                                <Option value="16:9">{t('common.dimensions.widescreen')} (16:9)</Option>
+                                <Option value="9:16">{t('common.dimensions.portrait')} (9:16)</Option>
+                                <Option value="1:1">{t('common.dimensions.square')} (1:1)</Option>
+                                <Option value="4:3">{t('common.dimensions.standard')} (4:3)</Option>
+                                <Option value="21:9">{t('common.dimensions.ultrawide')} (21:9)</Option>
+                              </Select>
+                            </Form.Item>
+                          ) : (
+                            <Form.Item label={t('manage.createAdSpace.form.customDimension')}>
+                              <Input.Group compact>
+                                <Form.Item
+                                  name={['customSize', 'width']}
+                                  noStyle
+                                  rules={[{ required: true, message: t('manage.createAdSpace.form.widthRequired') }]}
+                                >
+                                  <InputNumber min={1} max={100} style={{ width: '45%' }} placeholder={t('common.width')} />
+                                </Form.Item>
+                                <Input
+                                  style={{ width: '10%', textAlign: 'center', pointerEvents: 'none', backgroundColor: '#fff' }}
+                                  placeholder=":"
+                                  disabled
+                                />
+                                <Form.Item
+                                  name={['customSize', 'height']}
+                                  noStyle
+                                  rules={[{ required: true, message: t('manage.createAdSpace.form.heightRequired') }]}
+                                >
+                                  <InputNumber min={1} max={100} style={{ width: '45%' }} placeholder={t('common.height')} />
+                                </Form.Item>
+                              </Input.Group>
+                            </Form.Item>
+                          )
+                        }
                       </Form.Item>
 
                       <Form.Item

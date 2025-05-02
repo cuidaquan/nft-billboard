@@ -188,6 +188,8 @@
       "adContent": "广告内容",
       "adContentRequired": "请提供广告内容",
       "recommendedSize": "推荐尺寸为",
+      "recommendedRatio": "推荐比例",
+      "ratioGuidance": "为获得最佳显示效果，请准备符合此比例的广告内容",
       "projectUrl": "项目网站URL（可选）",
       "projectUrlRequired": "请输入项目网站URL",
       "projectUrlInvalid": "请输入有效的URL",
@@ -349,9 +351,16 @@
         "locationRequired": "请输入广告位位置",
         "locationPlaceholder": "广告位位置，例如: 主菜单、游戏大厅",
         "description": "描述",
-        "dimension": "广告位尺寸",
+        "dimension": "广告位比例",
         "dimensionRequired": "请选择广告位尺寸",
         "dimensionPlaceholder": "选择尺寸",
+        "dimensionType": "尺寸类型",
+        "standardRatio": "标准比例",
+        "customRatio": "自定义比例",
+        "customDimension": "自定义尺寸比例",
+        "widthRequired": "请输入宽度比例",
+        "heightRequired": "请输入高度比例",
+        "invalidCustomDimension": "请输入有效的自定义尺寸比例",
         "price": "每天价格 (SUI)",
         "priceRequired": "请输入每天价格",
         "pricePlaceholder": "每天价格 (SUI)",
@@ -465,7 +474,8 @@
       "unsupportedType": "不支持的文件类型，请上传PNG、JPG、GIF、WEBP图片或MP4、WEBM、MOV视频",
       "fileTooLarge": "文件大小超过限制，最大允许10MB，当前文件大小{size}MB",
       "connectWalletError": "请先连接钱包",
-      "uploadSuccess": "文件上传成功"
+      "uploadSuccess": "文件上传成功",
+      "ratioGuidance": "请使用符合比例的图片或视频以获得最佳显示效果"
     },
     "walrusUpdateWarning": "您正在使用Walrus上传新的广告内容。更新完成后，原Walrus存储的内容将被删除，可能返还部分存储费用。",
     "externalToWalrusWarning": "您正在从外部URL切换到Walrus上传。上传后的内容将存储在Walrus上，并按租期收取存储费用。",
@@ -518,7 +528,12 @@
       "small": "小",
       "medium": "中",
       "large": "大",
-      "extraLarge": "超大"
+      "extraLarge": "超大",
+      "widescreen": "宽屏",
+      "portrait": "竖屏",
+      "square": "方形",
+      "standard": "标准",
+      "ultrawide": "超宽屏"
     },
     "time": {
       "day": "天",
@@ -530,6 +545,8 @@
     "units": {
       "pixels": "像素"
     },
+    "width": "宽",
+    "height": "高",
     "buttons": {
       "submit": "提交",
       "cancel": "取消",

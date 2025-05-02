@@ -188,6 +188,8 @@
       "adContent": "Ad Content",
       "adContentRequired": "Please provide ad content",
       "recommendedSize": "Recommended size is",
+      "recommendedRatio": "Recommended ratio",
+      "ratioGuidance": "For best display, prepare ad content that matches this aspect ratio",
       "projectUrl": "Project Website URL",
       "projectUrlRequired": "Please enter project website URL",
       "projectUrlInvalid": "Please enter a valid URL",
@@ -349,9 +351,16 @@
         "locationRequired": "Please enter ad space location",
         "locationPlaceholder": "Ad space location, e.g.: Main Menu, Game Lobby",
         "description": "Description",
-        "dimension": "Ad Space Dimension",
+        "dimension": "Ad Space Ratio",
         "dimensionRequired": "Please select ad space dimension",
         "dimensionPlaceholder": "Select dimension",
+        "dimensionType": "Dimension Type",
+        "standardRatio": "Standard Ratio",
+        "customRatio": "Custom Ratio",
+        "customDimension": "Custom Dimension Ratio",
+        "widthRequired": "Please enter width ratio",
+        "heightRequired": "Please enter height ratio",
+        "invalidCustomDimension": "Please enter valid custom dimension ratio",
         "price": "Daily Price (SUI)",
         "priceRequired": "Please enter daily price",
         "pricePlaceholder": "Daily price (SUI)",
@@ -465,7 +474,8 @@
       "unsupportedType": "Unsupported file type, please upload PNG, JPG, GIF, WEBP images or MP4, WEBM, MOV videos",
       "fileTooLarge": "File size exceeds limit, maximum allowed is 10MB, current file size is {size}MB",
       "connectWalletError": "Please connect wallet first",
-      "uploadSuccess": "File uploaded successfully"
+      "uploadSuccess": "File uploaded successfully",
+      "ratioGuidance": "Please use images or videos with proper aspect ratio for best display"
     },
     "walrusUpdateWarning": "You are uploading new ad content to Walrus. After the update, the original Walrus content will be deleted, potentially refunding some storage fees.",
     "externalToWalrusWarning": "You are switching from external URL to Walrus upload. The uploaded content will be stored on Walrus and storage fees will be charged based on your lease period.",
@@ -518,7 +528,12 @@
       "small": "Small",
       "medium": "Medium",
       "large": "Large",
-      "extraLarge": "Extra Large"
+      "extraLarge": "Extra Large",
+      "widescreen": "Widescreen",
+      "portrait": "Portrait",
+      "square": "Square",
+      "standard": "Standard",
+      "ultrawide": "Ultrawide"
     },
     "time": {
       "day": "day",
@@ -530,6 +545,8 @@
     "units": {
       "pixels": "pixels"
     },
+    "width": "Width",
+    "height": "Height",
     "buttons": {
       "submit": "Submit",
       "cancel": "Cancel",

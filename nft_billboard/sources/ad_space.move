@@ -10,6 +10,7 @@ module nft_billboard::ad_space {
     const ENotCreator: u64 = 1;
     const EInvalidPrice: u64 = 2;
     const EInvalidLeaseDays: u64 = 3;
+    const EInvalidSize: u64 = 4;
 
     // 广告位结构
     public struct AdSpace has key, store {
@@ -60,24 +61,24 @@ module nft_billboard::ad_space {
         clock: &Clock,
         ctx: &mut TxContext
     ): AdSpace {
-        // 验证广告尺寸格式 (例如: "300x250")
+        // 验证广告尺寸格式 (例如: "16:9")
         let size_bytes = *string::as_bytes(&size);
-        let mut has_x = false;
+        let mut has_colon = false;
         let size_len = vector::length(&size_bytes);
-        
+
         let mut i = 0;
         while (i < size_len) {
-            if (*vector::borrow(&size_bytes, i) == 120) { // ASCII 'x'
-                has_x = true;
+            if (*vector::borrow(&size_bytes, i) == 58) { // ASCII ':'
+                has_colon = true;
                 break
             };
             i = i + 1;
         };
-        
-        assert!(has_x, EInvalidPrice);
-        
+
+        assert!(has_colon, EInvalidSize);
+
         let current_time = clock::timestamp_ms(clock) / 1000;
-        
+
         let ad_space = AdSpace {
             id: object::new(ctx),
             game_id,
@@ -107,9 +108,9 @@ module nft_billboard::ad_space {
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == ad_space.creator, ENotCreator);
-        
+
         ad_space.fixed_price = new_price;
-        
+
         event::emit(AdSpacePriceUpdated {
             ad_space_id: object::id(ad_space),
             new_price,
@@ -125,9 +126,9 @@ module nft_billboard::ad_space {
     ) {
         // 检查是否为创建者
         assert!(tx_context::sender(ctx) == ad_space.creator, ENotCreator);
-        
+
         ad_space.is_available = is_available;
-        
+
         event::emit(AdSpaceAvailabilityUpdated {
             ad_space_id: object::id(ad_space),
             is_available,
@@ -174,13 +175,13 @@ module nft_billboard::ad_space {
     ) {
         // 确保只有创建者可以删除广告位
         assert!(tx_context::sender(ctx) == ad_space.creator, ENotCreator);
-        
+
         // 发送删除事件
         event::emit(AdSpaceDeleted {
             ad_space_id: object::id(&ad_space),
             deleted_by: tx_context::sender(ctx)
         });
-        
+
         // 解构并删除广告位
         let AdSpace { id, game_id: _, location: _, size: _, is_available: _, creator: _, created_at: _, fixed_price: _ } = ad_space;
         object::delete(id);
@@ -190,38 +191,38 @@ module nft_billboard::ad_space {
     public fun calculate_lease_price(ad_space: &AdSpace, lease_days: u64): u64 {
         // 验证租赁天数在有效范围内
         assert!(lease_days > 0 && lease_days <= 365, EInvalidLeaseDays);
-        
+
         let daily_price = ad_space.fixed_price;  // Y - 一天的租赁价格
         let ratio = 977000; // a - 比例因子，这里设为0.977000
         let base = 1000000; // 用于表示小数的基数
         let min_daily_factor = 500000; // 最低日因子(1/2)
-        
+
         // 如果只租一天，直接返回每日价格
         if (lease_days == 1) {
             return daily_price
         };
-        
+
         // 计算租赁总价
         let mut total_price = daily_price; // 第一天的价格
         let mut factor = base; // 初始因子为1.0
         let mut i = 1; // 从第二天开始计算
-        
+
         while (i < lease_days) {
             // 计算当前因子
             factor = factor * ratio / base;
-            
+
             // 如果因子低于最低值(1/10)，则使用最低值
             if (factor < min_daily_factor) {
                 // 增加(租赁天数-i)天的最低价格
                 total_price = total_price + daily_price * min_daily_factor * (lease_days - i) / base;
                 break
             };
-            
+
             // 否则增加当前因子对应的价格
             total_price = total_price + daily_price * factor / base;
             i = i + 1;
         };
-        
+
         total_price
     }
-} 
+}

@@ -21,6 +21,7 @@ import NotFoundPage from './pages/NotFound';
 // 全局样式
 import './App.scss';
 import '@mysten/dapp-kit/dist/index.css';
+import './styles/AdSpaceDetailFix.css';
 
 const queryClient = new QueryClient();
 
@@ -40,13 +41,13 @@ function App() {
   useEffect(() => {
     // 保存当前网络到 localStorage
     localStorage.setItem('current_network', DEFAULT_NETWORK);
-    
+
     // 监听网络变化
     window.addEventListener('sui_networkChange', (event: any) => {
       const newNetwork = event.detail?.network || DEFAULT_NETWORK;
       localStorage.setItem('current_network', newNetwork);
     });
-    
+
     return () => {
       window.removeEventListener('sui_networkChange', () => {});
     };

@@ -9,6 +9,7 @@ export interface AdSpace {
     width: number;
     height: number;
   };
+  aspectRatio?: string; // 新增：比例表示，如 "16:9"
   owner: string | null;
   available: boolean;
   location: string; // 位置描述

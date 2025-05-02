@@ -38,6 +38,7 @@ interface WalrusUploadProps {
   customStartTime?: number; // 自定义开始时间（Unix时间戳，秒）
   onChange?: (data: { url: string; blobId?: string; storageSource: string }) => void;
   hideStorageSelector?: boolean; // 是否隐藏存储模式选择器
+  aspectRatio?: string; // 新增：广告位比例，如 "16:9"
 }
 
 // 上传阶段枚举
@@ -54,7 +55,8 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
   leaseDays = WALRUS_CONFIG.DEFAULT_LEASE_DAYS,
   customStartTime,
   onChange,
-  hideStorageSelector = false // 默认显示存储模式选择器
+  hideStorageSelector = false, // 默认显示存储模式选择器
+  aspectRatio // 广告位比例
 }) => {
   const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
@@ -485,6 +487,36 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
     );
   }
 
+  // 根据比例计算预览宽度
+  const getRatioPreviewWidth = (ratio: string): string => {
+    if (!ratio || !ratio.includes(':')) return '100%';
+
+    const [w, h] = ratio.split(':').map(Number);
+    if (isNaN(w) || isNaN(h) || w <= 0 || h <= 0) return '100%';
+
+    if (w >= h) {
+      return '100%';
+    } else {
+      // 对于竖向比例，按高度计算宽度
+      return `${(w / h) * 100}%`;
+    }
+  };
+
+  // 根据比例计算预览高度
+  const getRatioPreviewHeight = (ratio: string): string => {
+    if (!ratio || !ratio.includes(':')) return '100%';
+
+    const [w, h] = ratio.split(':').map(Number);
+    if (isNaN(w) || isNaN(h) || w <= 0 || h <= 0) return '100%';
+
+    if (w >= h) {
+      // 对于横向比例，按宽度计算高度
+      return `${(h / w) * 100}%`;
+    } else {
+      return '100%';
+    }
+  };
+
   return (
     <div className="walrus-upload-container">
       {/* 只有在hideStorageSelector为false时才显示存储模式选择器 */}
@@ -494,6 +526,53 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
             <Radio value="walrus">{t('walrusUpload.storage.walrus')}</Radio>
             <Radio value="external">{t('walrusUpload.storage.external')}</Radio>
           </Radio.Group>
+        </div>
+      )}
+
+      {/* 显示比例指南 */}
+      {aspectRatio && (
+        <div className="ratio-guidance" style={{
+          backgroundColor: '#f0f8ff',
+          padding: '12px 16px',
+          borderRadius: '4px',
+          marginBottom: '16px',
+          border: '1px solid #e6f0ff'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <InfoCircleOutlined style={{ color: '#1677ff', marginRight: '8px' }} />
+            <span>{t('walrusUpload.upload.ratioGuidance')}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', marginTop: '10px' }}>
+            <div className="ratio-preview" style={{
+              position: 'relative',
+              width: '60px',
+              height: '60px',
+              margin: '0 16px 0 0',
+              background: 'white',
+              overflow: 'hidden',
+              borderRadius: '4px',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: getRatioPreviewWidth(aspectRatio),
+                height: getRatioPreviewHeight(aspectRatio),
+                background: '#e6f7ff',
+                border: '1px solid #1677ff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#1677ff'
+              }}>
+                {aspectRatio}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -545,34 +624,44 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
       ) : (
         <div>
           <Form.Item>
-            <Input
-              placeholder={t('walrusUpload.external.placeholder')}
-              value={externalUrl}
-              onChange={handleExternalUrlChange}
-            />
+            <div style={{ display: 'flex' }}>
+              <Input
+                placeholder={t('walrusUpload.external.placeholder')}
+                value={externalUrl}
+                onChange={handleExternalUrlChange}
+                style={{ flex: 1 }}
+              />
+              <Button
+                type="primary"
+                disabled={!externalUrl || !isValidUrl(externalUrl)}
+                style={{
+                  marginLeft: '8px',
+                  height: '32px',
+                  borderRadius: '4px',
+                  background: 'linear-gradient(90deg, #4e63ff, #6e56cf)',
+                  border: 'none',
+                  boxShadow: '0 2px 6px rgba(78, 99, 255, 0.2)'
+                }}
+                onClick={() => {
+                  if (externalUrl && isValidUrl(externalUrl)) {
+                    // 通知父组件URL已确认
+                    onSuccess?.(externalUrl, undefined, 'external');
+                    // 设置上传成功状态
+                    setUploadSuccess(true);
+                    setUploadedUrl(externalUrl);
+                    // 根据URL扩展名判断是图片还是视频
+                    setIsImage(checkMediaType(externalUrl) === 'image');
+                    // 显示成功消息
+                    message.success(t('purchase.form.externalUrlSuccess'));
+                  }
+                }}
+              >
+                {t('walrusUpload.external.confirmUrl')}
+              </Button>
+            </div>
             <div className="upload-note">
               {t('walrusUpload.external.note')}
             </div>
-            <Button
-              type="primary"
-              style={{ marginTop: '10px' }}
-              disabled={!externalUrl || !isValidUrl(externalUrl)}
-              onClick={() => {
-                if (externalUrl && isValidUrl(externalUrl)) {
-                  // 通知父组件URL已确认
-                  onSuccess?.(externalUrl, undefined, 'external');
-                  // 设置上传成功状态
-                  setUploadSuccess(true);
-                  setUploadedUrl(externalUrl);
-                  // 根据URL扩展名判断是图片还是视频
-                  setIsImage(checkMediaType(externalUrl) === 'image');
-                  // 显示成功消息
-                  message.success(t('purchase.form.externalUrlSuccess'));
-                }
-              }}
-            >
-              {t('walrusUpload.external.confirmUrl')}
-            </Button>
           </Form.Item>
 
           {previewVisible && externalUrl && (

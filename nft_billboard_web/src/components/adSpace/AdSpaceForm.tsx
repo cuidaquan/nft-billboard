@@ -148,7 +148,10 @@ const AdSpaceForm: React.FC<AdSpaceFormProps> = ({
           <Col span={12}>
             <Text strong>{t('purchase.form.brandName')}：</Text> <Text>{adSpace.name}</Text><br />
             <Text strong>{t('manage.createAdSpace.form.location')}：</Text> <Text>{adSpace.location}</Text><br />
-            <Text strong>{t('manage.createAdSpace.form.dimension')}：</Text> <Text>{adSpace.dimension.width} x {adSpace.dimension.height}</Text><br />
+            <Text strong>{t('manage.createAdSpace.form.dimension')}：</Text>
+            <Text>
+              {adSpace.aspectRatio || '16:9'}
+            </Text><br />
           </Col>
           <Col span={12}>
             <Text strong>{t('manage.createAdSpace.form.price')}：</Text> <Text>{Number(adSpace.price) / 1000000000} SUI / {t('common.time.day')}</Text>
@@ -302,12 +305,13 @@ const AdSpaceForm: React.FC<AdSpaceFormProps> = ({
               rules={[
                 { required: true, message: t('purchase.form.adContentRequired') }
               ]}
-              extra={`${t('purchase.form.recommendedSize')} ${adSpace.dimension.width} x ${adSpace.dimension.height}`}
+              // 移除额外的比例提示，因为WalrusUpload组件已经包含了这个提示
             >
               <WalrusUpload
                 leaseDays={leaseDays}
                 customStartTime={useCustomStartTime && startTime ? Math.floor(startTime.valueOf() / 1000) : undefined}
                 onChange={handleContentParamsChange}
+                aspectRatio={adSpace.aspectRatio}
               />
             </Form.Item>
           </Col>

@@ -1547,11 +1547,31 @@ export async function getAllAdSpacesFromFactory(factoryId: string, developerAddr
 
                 // 安全地获取尺寸信息
                 let width = 300, height = 250;
-                if (adSpaceFields.size && typeof adSpaceFields.size === 'string' && adSpaceFields.size.includes('x')) {
-                  const sizeParts = adSpaceFields.size.split('x');
-                  if (sizeParts.length === 2) {
-                    width = parseInt(sizeParts[0]) || 300;
-                    height = parseInt(sizeParts[1]) || 250;
+                const aspectRatio = adSpaceFields.size || "16:9";
+
+                // 处理比例格式 (例如: "16:9")
+                if (adSpaceFields.size && typeof adSpaceFields.size === 'string') {
+                  if (adSpaceFields.size.includes(':')) {
+                    // 新的比例格式
+                    const [w, h] = adSpaceFields.size.split(':').map(Number);
+                    if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
+                      // 设置基于比例的预览尺寸
+                      const baseSize = 300;
+                      if (w >= h) {
+                        width = baseSize;
+                        height = Math.round(baseSize * (h / w));
+                      } else {
+                        height = baseSize;
+                        width = Math.round(baseSize * (w / h));
+                      }
+                    }
+                  } else if (adSpaceFields.size.includes('x')) {
+                    // 兼容旧的像素格式
+                    const sizeParts = adSpaceFields.size.split('x');
+                    if (sizeParts.length === 2) {
+                      width = parseInt(sizeParts[0]) || 300;
+                      height = parseInt(sizeParts[1]) || 250;
+                    }
                   }
                 }
 
@@ -1567,6 +1587,7 @@ export async function getAllAdSpacesFromFactory(factoryId: string, developerAddr
                     width,
                     height,
                   },
+                  aspectRatio, // 添加比例字段
                   owner: null, // 初始没有所有者
                   available: adSpaceFields.is_available !== undefined ? adSpaceFields.is_available : true,
                   location: adSpaceFields.location || '未知位置',
@@ -1671,11 +1692,31 @@ export async function getAdSpaceById(adSpaceId: string): Promise<AdSpace | null>
 
     // 提取尺寸信息 - 从size字段解析
     let width = 300, height = 250;
-    if (fields.size && typeof fields.size === 'string' && fields.size.includes('x')) {
-      const sizeParts = fields.size.split('x');
-      if (sizeParts.length === 2) {
-        width = parseInt(sizeParts[0]) || 300;
-        height = parseInt(sizeParts[1]) || 250;
+    const aspectRatio = fields.size || "16:9";
+
+    // 处理比例格式 (例如: "16:9")
+    if (fields.size && typeof fields.size === 'string') {
+      if (fields.size.includes(':')) {
+        // 新的比例格式
+        const [w, h] = fields.size.split(':').map(Number);
+        if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
+          // 设置基于比例的预览尺寸
+          const baseSize = 300;
+          if (w >= h) {
+            width = baseSize;
+            height = Math.round(baseSize * (h / w));
+          } else {
+            height = baseSize;
+            width = Math.round(baseSize * (w / h));
+          }
+        }
+      } else if (fields.size.includes('x')) {
+        // 兼容旧的像素格式
+        const sizeParts = fields.size.split('x');
+        if (sizeParts.length === 2) {
+          width = parseInt(sizeParts[0]) || 300;
+          height = parseInt(sizeParts[1]) || 250;
+        }
       }
     }
 
@@ -1747,6 +1788,7 @@ export async function getAdSpaceById(adSpaceId: string): Promise<AdSpace | null>
         width,
         height
       },
+      aspectRatio, // 添加比例字段
       owner: null, // 暂不处理所有者
       available,
       location,
