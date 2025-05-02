@@ -3,8 +3,14 @@ import { Card, Button, Typography, Tag, Space } from 'antd';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { BillboardNFT } from '../../types';
-// import { formatDate } from '../../utils/format';
-import { ClockCircleOutlined, LinkOutlined } from '@ant-design/icons';
+import {
+  ClockCircleOutlined,
+  LinkOutlined,
+  BlockOutlined,
+  EnvironmentOutlined,
+  DollarOutlined,
+  ColumnWidthOutlined
+} from '@ant-design/icons';
 import './NFTCard.scss';
 
 const { Text, Title } = Typography;
@@ -114,7 +120,6 @@ const NFTCard: React.FC<NFTCardProps> = ({ nft }) => {
               controls
               preload="metadata"
               onError={() => setHasError(true)}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
             <img
@@ -126,45 +131,57 @@ const NFTCard: React.FC<NFTCardProps> = ({ nft }) => {
           {hasError && (
             <div className="media-error">{t('nftDetail.mediaLoadError')}</div>
           )}
+          <div className="nft-status-tag">
+            <Tag color={isExpired ? "red" : new Date() < new Date(nft.leaseStart) ? "blue" : isAboutToExpire() ? "orange" : "green"}>
+              {isExpired
+                ? t('nftDetail.status.expired')
+                : new Date() < new Date(nft.leaseStart)
+                  ? t('nftDetail.status.pending')
+                  : isAboutToExpire()
+                    ? t('nftDetail.status.expiring')
+                    : t('nftDetail.status.active')
+              }
+            </Tag>
+          </div>
         </div>
       }
+      actions={[
+        <Button type="primary" key="view">
+          <Link to={`/my-nfts/${nft.id}`}>{t('adSpaces.buttons.viewDetails')}</Link>
+        </Button>
+      ]}
     >
-      <Title level={5} className="nft-title">{nft.brandName}</Title>
+      <Title level={4} className="nft-title">{nft.brandName}</Title>
 
-      <div className="nft-info">
+      <Space direction="vertical" className="nft-info">
         <div className="info-row">
-          <Text type="secondary">{t('nftDetail.fields.adSpaceId')}:</Text>
-          <Link to={`/ad-spaces/${nft.adSpaceId}`} className="ad-space-link">
-            <Text>{nft.adSpaceId.substring(0, 8)}...</Text>
-            <LinkOutlined style={{ marginLeft: 4, fontSize: '12px' }} />
-          </Link>
+          <BlockOutlined />
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Text>{t('nftDetail.fields.adSpaceId')}: </Text>
+            <Text style={{ marginLeft: '4px' }}>{nft.adSpaceId.substring(0, 8)}...</Text>
+            <Link to={`/ad-spaces/${nft.adSpaceId}`} className="ad-space-link" style={{ marginLeft: '4px', display: 'flex', alignItems: 'center' }}>
+              <LinkOutlined />
+            </Link>
+          </div>
         </div>
 
-        <div className="info-row lease-period">
-          <Text type="secondary"><ClockCircleOutlined /> {t('nftDetail.leasePeriod')}:</Text>
-          <Space direction="vertical" size={0} style={{ textAlign: 'right' }}>
-            <Text style={{ fontSize: '12px' }}>{t('nftDetail.from')}: {formatLeaseDate(nft.leaseStart)}</Text>
-            <Text style={{ fontSize: '12px' }}>{t('nftDetail.to')}: {formatLeaseDate(nft.leaseEnd)}</Text>
-          </Space>
+        <div className="info-row">
+          <ClockCircleOutlined />
+          <div>
+            <Text>{t('nftDetail.leasePeriod')}:</Text>
+            <div style={{ marginTop: '4px' }}>
+              <div style={{ marginLeft: '4px', fontSize: '13px', display: 'flex' }}>
+                <Text style={{ minWidth: '40px' }}>{t('nftDetail.from')}:</Text>
+                <Text style={{ marginLeft: '4px' }}>{formatLeaseDate(nft.leaseStart)}</Text>
+              </div>
+              <div style={{ marginLeft: '4px', fontSize: '13px', display: 'flex' }}>
+                <Text style={{ minWidth: '40px' }}>{t('nftDetail.to')}:</Text>
+                <Text style={{ marginLeft: '4px' }}>{formatLeaseDate(nft.leaseEnd)}</Text>
+              </div>
+            </div>
+          </div>
         </div>
-
-        <div className="nft-status">
-          <Tag color={isExpired ? "red" : new Date() < new Date(nft.leaseStart) ? "blue" : isAboutToExpire() ? "orange" : "green"}>
-            {isExpired
-              ? t('nftDetail.status.expired')
-              : new Date() < new Date(nft.leaseStart)
-                ? t('nftDetail.status.pending')
-                : isAboutToExpire()
-                  ? t('nftDetail.status.expiring')
-                  : t('nftDetail.status.active')
-            }
-          </Tag>
-        </div>
-      </div>
-
-      <Link to={`/my-nfts/${nft.id}`}>
-        <Button type="primary" block>{t('adSpaces.buttons.viewDetails')}</Button>
-      </Link>
+      </Space>
     </Card>
   );
 };

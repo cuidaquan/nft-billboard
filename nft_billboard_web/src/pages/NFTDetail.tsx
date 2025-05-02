@@ -1,20 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import { Card, Typography, Alert, Spin, Button, Descriptions, Space, Tag, Modal, Input, Form, Select, message, Divider, InputNumber } from 'antd';
-import { EditOutlined, ClockCircleOutlined, LinkOutlined } from '@ant-design/icons';
+import { Card, Typography, Alert, Spin, Button, Descriptions, Space, Tag, Modal, Form, message, Divider, InputNumber } from 'antd';
+import {
+  EditOutlined,
+  ClockCircleOutlined,
+  LinkOutlined,
+  BlockOutlined,
+  UserOutlined,
+  GlobalOutlined,
+  TagOutlined
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { BillboardNFT, RenewNFTParams } from '../types';
 import { getNFTDetails, calculateLeasePrice, formatSuiAmount, createRenewLeaseTx } from '../utils/contract';
-import { formatDate, truncateAddress } from '../utils/format';
+import { truncateAddress, formatLeasePeriod } from '../utils/format';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import './NFTDetail.scss';
 import { Link } from 'react-router-dom';
 import MediaContent from '../components/nft/MediaContent';
 import UpdateAdContent from '../components/nft/UpdateAdContent';
 import { walrusService } from '../utils/walrus';
+import '../styles/NFTDetailFix.css';
 
 const { Title, Paragraph, Text } = Typography;
-const { Option } = Select;
 
 const NFTDetailPage: React.FC = () => {
   const { t } = useTranslation();
@@ -37,23 +45,7 @@ const NFTDetailPage: React.FC = () => {
   const [calculatingPrice, setCalculatingPrice] = useState<boolean>(false);
   const [renewPrice, setRenewPrice] = useState<string>('0');
 
-  // 本地日期格式化函数（带时间）
-  const formatDateWithTime = (timestamp: string): string => {
-    try {
-      const date = new Date(timestamp);
-      if (isNaN(date.getTime())) return t('nftDetail.messages.invalidDate');
 
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-
-      return `${year}/${month}/${day} ${hours}:${minutes}`;
-    } catch (error) {
-      return t('nftDetail.messages.invalidDate');
-    }
-  };
 
   // 检查是否是续期路径
   useEffect(() => {
@@ -553,7 +545,7 @@ const NFTDetailPage: React.FC = () => {
 
   // 判断NFT状态：待展示、活跃中或已过期
   const getNftStatus = () => {
-    if (!nft) return { status: 'unknown', color: 'default' };
+    if (!nft) return { status: 'unknown', color: 'default', text: t('common.messages.unknown') };
 
     const now = new Date();
     const leaseStart = new Date(nft.leaseStart);
@@ -599,12 +591,10 @@ const NFTDetailPage: React.FC = () => {
   return (
     <div className="nft-detail-page">
       <div className="nft-header">
-        <Title level={2}>{nft.brandName}</Title>
-        <div className="status-tag">
-          <Tag className={`status ${nftStatus.status}`} color={nftStatus.color}>
-            {nftStatus.text}
-          </Tag>
-        </div>
+        <Title level={2}>
+          <BlockOutlined style={{ marginRight: '10px' }} />
+          {nft.brandName}
+        </Title>
       </div>
 
       <div className="nft-content">
@@ -613,46 +603,77 @@ const NFTDetailPage: React.FC = () => {
             contentUrl={nft.contentUrl}
             brandName={nft.brandName}
             className="nft-media"
+            status={nftStatus}
           />
         </div>
 
         <div className="nft-details">
           <Card>
-            <Descriptions title={t('nftDetail.details')} bordered column={1}>
-              <Descriptions.Item label={t('nftDetail.fields.nftId')}>{truncateAddress(nft.id)}</Descriptions.Item>
-              <Descriptions.Item label={t('nftDetail.fields.adSpaceId')}>
-                <Space>
+            <Descriptions title={t('nftDetail.details')} bordered={false} column={1}>
+
+              <Descriptions.Item
+                label={
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <BlockOutlined style={{ marginRight: '8px', color: '#4e63ff' }} />
+                    <span>{t('nftDetail.fields.adSpaceId')}</span>
+                  </div>
+                }
+              >
+                <div style={{ display: 'flex', alignItems: 'center' }}>
                   <Text>{truncateAddress(nft.adSpaceId)}</Text>
-                  <Link to={`/ad-spaces/${nft.adSpaceId}`}>
-                    <Button size="small" type="link" icon={<LinkOutlined />}>{t('nftDetail.buttons.viewAdSpace')}</Button>
+                  <Link to={`/ad-spaces/${nft.adSpaceId}`} style={{ marginLeft: '4px', display: 'flex', alignItems: 'center' }}>
+                    <LinkOutlined style={{ fontSize: '14px' }} />
                   </Link>
-                </Space>
+                </div>
               </Descriptions.Item>
-              <Descriptions.Item label={t('nftDetail.fields.owner')}>{truncateAddress(nft.owner)}</Descriptions.Item>
-              <Descriptions.Item label={t('nftDetail.fields.brandName')}>{nft.brandName}</Descriptions.Item>
-              <Descriptions.Item label={t('nftDetail.fields.projectUrl')}>
+              <Descriptions.Item
+                label={
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <UserOutlined style={{ marginRight: '8px', color: '#4e63ff' }} />
+                    <span>{t('nftDetail.fields.owner')}</span>
+                  </div>
+                }
+              >
+                <Text>{truncateAddress(nft.owner)}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item
+                label={
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <TagOutlined style={{ marginRight: '8px', color: '#4e63ff' }} />
+                    <span>{t('nftDetail.fields.brandName')}</span>
+                  </div>
+                }
+              >
+                <Text>{nft.brandName}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item
+                label={
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <GlobalOutlined style={{ marginRight: '8px', color: '#4e63ff' }} />
+                    <span>{t('nftDetail.fields.projectUrl')}</span>
+                  </div>
+                }
+              >
                 <a href={nft.projectUrl} target="_blank" rel="noopener noreferrer">
                   {nft.projectUrl}
                 </a>
               </Descriptions.Item>
-              <Descriptions.Item label={t('nftDetail.fields.leaseStart') + ' - ' + t('nftDetail.fields.leaseEnd')}>
-                <Space direction="vertical" size={4}>
-                  <div>
-                    <Text type="secondary">{t('nftDetail.fields.leaseStart')}: </Text>
-                    <Text strong>{formatDateWithTime(nft.leaseStart)}</Text>
+              <Descriptions.Item
+                label={
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <ClockCircleOutlined style={{ marginRight: '8px', color: '#4e63ff' }} />
+                    <span>{t('nftDetail.fields.leasePeriod')}</span>
                   </div>
-                  <div>
-                    <Text type="secondary">{t('nftDetail.fields.leaseEnd')}: </Text>
-                    <Text strong>{formatDateWithTime(nft.leaseEnd)}</Text>
-                  </div>
-                </Space>
+                }
+              >
+                <Text>
+                  {formatLeasePeriod(nft.leaseStart)} ~ {formatLeasePeriod(nft.leaseEnd)}
+                </Text>
               </Descriptions.Item>
-              <Descriptions.Item label={t('nftDetail.fields.status')}>
-                <Tag color={nftStatus.color}>
-                  {nftStatus.text}
-                </Tag>
-              </Descriptions.Item>
+
             </Descriptions>
+
+            <Divider />
 
             <div className="nft-actions">
               <Space size="middle">
@@ -663,6 +684,7 @@ const NFTDetailPage: React.FC = () => {
                       icon={<EditOutlined />}
                       onClick={() => setUpdateContentVisible(true)}
                       disabled={nftStatus.status === 'expired'}
+                      size="large"
                     >
                       {t('nftDetail.buttons.updateContent')}
                     </Button>
@@ -681,6 +703,7 @@ const NFTDetailPage: React.FC = () => {
                         setRenewLeaseVisible(true);
                       }}
                       danger={nftStatus.status === 'expired'}
+                      size="large"
                     >
                       {nftStatus.status === 'expired' ? t('nftDetail.status.expired') : t('nftDetail.buttons.renewLease')}
                     </Button>
@@ -690,6 +713,7 @@ const NFTDetailPage: React.FC = () => {
               {!isOwner() && (
                 <Alert
                   message={t('nftDetail.buttons.updateContent') + ' / ' + t('nftDetail.buttons.renewLease')}
+                  description={t('nftDetail.notOwner')}
                   type="info"
                   showIcon
                   style={{ marginTop: '16px' }}

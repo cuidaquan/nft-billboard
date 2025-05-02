@@ -233,6 +233,7 @@
       "projectUrl": "项目网站URL",
       "leaseStart": "租约开始",
       "leaseEnd": "租约结束",
+      "leasePeriod": "租期",
       "daysRemaining": "剩余天数",
       "status": "状态",
       "contentUrl": "广告内容URL"
@@ -305,7 +306,8 @@
       "contentUpdateSuccess": "广告内容已成功更新",
       "contentUpdatePartialSuccess": "广告内容已更新，但无法刷新页面数据。请手动刷新页面。",
       "invalidDate": "无效日期"
-    }
+    },
+    "notOwner": "您不是此NFT的所有者，无法执行此操作"
   },
   "manage": {
     "title": "管理中心",
@@ -567,7 +569,8 @@
       "loading": "加载中",
       "invalidDate": "无效日期",
       "required": "此字段为必填项",
-      "invalidAddress": "请输入有效的SUI地址"
+      "invalidAddress": "请输入有效的SUI地址",
+      "unknown": "未知"
     }
   }
 }

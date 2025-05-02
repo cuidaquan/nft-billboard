@@ -16,13 +16,13 @@ export function formatDate(timestamp: number | string): string {
   try {
     // 处理传入的参数可能是时间戳数字或ISO日期字符串
     const date = typeof timestamp === 'string' ? new Date(timestamp) : new Date(timestamp);
-    
+
     // 检查日期是否有效
     if (isNaN(date.getTime())) {
       console.error('无效的日期:', timestamp);
       return '无效日期';
     }
-    
+
     // 只显示日期部分
     return date.toLocaleDateString('zh-CN', {
       year: 'numeric',
@@ -43,12 +43,12 @@ export function formatDate(timestamp: number | string): string {
 export function formatDateWithTime(timestamp: number | string): string {
   try {
     const date = typeof timestamp === 'string' ? new Date(timestamp) : new Date(timestamp);
-    
+
     if (isNaN(date.getTime())) {
       console.error('无效的日期:', timestamp);
       return '无效日期';
     }
-    
+
     // 日期和时间格式
     return date.toLocaleDateString('zh-CN', {
       year: 'numeric',
@@ -101,4 +101,33 @@ export function truncateAddress(address: string): string {
   if (!address) return '';
   if (address.length <= 10) return address;
   return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-} 
+}
+
+/**
+ * 格式化日期为简化的租期格式 (DD/MM/YYYY, HH:MM:SS)
+ * @param timestamp 时间戳或ISO日期字符串
+ * @returns 格式化后的日期字符串
+ */
+export function formatLeasePeriod(timestamp: number | string): string {
+  try {
+    const date = typeof timestamp === 'string' ? new Date(timestamp) : new Date(timestamp);
+
+    if (isNaN(date.getTime())) {
+      console.error('无效的日期:', timestamp);
+      return '无效日期';
+    }
+
+    // 日期和时间格式 DD/MM/YYYY, HH:MM:SS
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+
+    return `${day}/${month}/${year}, ${hours}:${minutes}:${seconds}`;
+  } catch (error) {
+    console.error('日期格式化错误:', error);
+    return '无效日期';
+  }
+}

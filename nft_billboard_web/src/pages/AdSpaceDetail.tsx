@@ -23,7 +23,6 @@ import { getAdSpaceDetails, formatSuiAmount, getNFTDetails } from '../utils/cont
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { truncateAddress } from '../utils/format';
 import MediaContent from '../components/nft/MediaContent';
-import AspectRatioContainer from '../components/nft/AspectRatioContainer';
 import './AdSpaceDetail.scss';
 import '../styles/AdSpaceDetailFix.css';
 
@@ -336,21 +335,19 @@ setCurrentNftIndex(prevIndex);
               </div>
             ) : currentActiveNft ? (
               <div className="active-nft-display">
-                <AspectRatioContainer aspectRatio={adSpace.aspectRatio || '16:9'}>
-                  <MediaContent
-                    contentUrl={currentActiveNft.contentUrl}
-                    brandName={currentActiveNft.brandName}
-                    className="ad-space-media"
-                    onError={() => {
-                      setMediaErrors(prev => ({
-                        ...prev,
-                        [currentActiveNft.contentUrl]: true
-                      }));
-                      // 自动切换到下一个媒体
-                      handleNextNft();
-                    }}
-                  />
-                </AspectRatioContainer>
+                <MediaContent
+                  contentUrl={currentActiveNft.contentUrl}
+                  brandName={currentActiveNft.brandName}
+                  className="ad-space-media"
+                  onError={() => {
+                    setMediaErrors(prev => ({
+                      ...prev,
+                      [currentActiveNft.contentUrl]: true
+                    }));
+                    // 自动切换到下一个媒体
+                    handleNextNft();
+                  }}
+                />
                 <div className="active-badge animate-pulse">
                   <Tag color="green">{t('nftDetail.status.active')}</Tag>
                 </div>
@@ -382,24 +379,22 @@ setCurrentNftIndex(prevIndex);
                 )}
               </div>
             ) : (
-              <AspectRatioContainer aspectRatio={adSpace.aspectRatio || '16:9'}>
-                <div className="ad-space-detail-placeholder">
-                  <div className="placeholder-content">
-                    <Title level={3}>
-                      <BlockOutlined style={{ marginRight: '10px' }} />
-                      {adSpace.name}
-                    </Title>
-                    <Paragraph>
-                      <ColumnWidthOutlined style={{ marginRight: '10px' }} />
-                      {adSpace.aspectRatio || '16:9'}
-                    </Paragraph>
-                    <Paragraph type="secondary">
-                      <InfoCircleOutlined style={{ marginRight: '10px' }} />
-                      {t('manage.myAdSpaces.waitingContent')}
-                    </Paragraph>
-                  </div>
+              <div className="ad-space-detail-placeholder">
+                <div className="placeholder-content">
+                  <Title level={3}>
+                    <BlockOutlined style={{ marginRight: '10px' }} />
+                    {adSpace.name}
+                  </Title>
+                  <Paragraph>
+                    <ColumnWidthOutlined style={{ marginRight: '10px' }} />
+                    {adSpace.aspectRatio || '16:9'}
+                  </Paragraph>
+                  <Paragraph type="secondary">
+                    <InfoCircleOutlined style={{ marginRight: '10px' }} />
+                    {t('manage.myAdSpaces.waitingContent')}
+                  </Paragraph>
                 </div>
-              </AspectRatioContainer>
+              </div>
             )}
           </div>
           <div className="ad-space-info">
@@ -535,13 +530,11 @@ setCurrentNftIndex(prevIndex);
                     className="nft-card"
                     cover={
                       <div className="nft-card-image-container">
-                        <AspectRatioContainer aspectRatio={adSpace.aspectRatio || '16:9'}>
-                          <MediaContent
-                            contentUrl={nft.contentUrl}
-                            brandName={nft.brandName}
-                            className="nft-card-media"
-                          />
-                        </AspectRatioContainer>
+                        <MediaContent
+                          contentUrl={nft.contentUrl}
+                          brandName={nft.brandName}
+                          className="nft-card-media"
+                        />
                         <div className="nft-card-tag">
                           <Tag color={statusColor}>{statusTag}</Tag>
                           {account && nft.owner.toLowerCase() === account.address.toLowerCase() && (

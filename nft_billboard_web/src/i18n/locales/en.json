@@ -233,6 +233,7 @@
       "projectUrl": "Project URL",
       "leaseStart": "Lease Start",
       "leaseEnd": "Lease End",
+      "leasePeriod": "Lease Period",
       "daysRemaining": "Days Remaining",
       "status": "Status",
       "contentUrl": "Ad Content URL"
@@ -305,7 +306,8 @@
       "contentUpdateSuccess": "Ad content updated successfully",
       "contentUpdatePartialSuccess": "Ad content has been updated, but unable to refresh page data. Please refresh the page manually.",
       "invalidDate": "Invalid date"
-    }
+    },
+    "notOwner": "You are not the owner of this NFT and cannot perform this action"
   },
   "manage": {
     "title": "Management Center",
@@ -567,7 +569,8 @@
       "loading": "Loading",
       "invalidDate": "Invalid date",
       "required": "This field is required",
-      "invalidAddress": "Please enter a valid SUI address"
+      "invalidAddress": "Please enter a valid SUI address",
+      "unknown": "Unknown"
     }
   }
 }

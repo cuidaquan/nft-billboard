@@ -146,18 +146,29 @@ const AdSpaceForm: React.FC<AdSpaceFormProps> = ({
       <div className="ad-space-info">
         <Row>
           <Col span={12}>
-            <Text strong>{t('purchase.form.brandName')}：</Text> <Text>{adSpace.name}</Text><br />
-            <Text strong>{t('manage.createAdSpace.form.location')}：</Text> <Text>{adSpace.location}</Text><br />
-            <Text strong>{t('manage.createAdSpace.form.dimension')}：</Text>
-            <Text>
-              {adSpace.aspectRatio || '16:9'}
-            </Text><br />
+            <div style={{ marginBottom: '10px' }}>
+              <Text strong>{t('purchase.form.brandName')}：</Text>
+              <Text>{adSpace.name}</Text>
+            </div>
+            <div style={{ marginBottom: '10px' }}>
+              <Text strong>{t('manage.createAdSpace.form.location')}：</Text>
+              <Text>{adSpace.location}</Text>
+            </div>
+            <div>
+              <Text strong>{t('manage.createAdSpace.form.dimension')}：</Text>
+              <Text>{adSpace.aspectRatio || '16:9'}</Text>
+            </div>
           </Col>
           <Col span={12}>
-            <Text strong>{t('manage.createAdSpace.form.price')}：</Text> <Text>{Number(adSpace.price) / 1000000000} SUI / {t('common.time.day')}</Text>
-            <Tooltip title={t('common.price.discount')}>
-              <QuestionCircleOutlined style={{ marginLeft: 8 }} />
-            </Tooltip>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <Text strong>{t('manage.createAdSpace.form.price')}：</Text>
+              <Text style={{ color: 'var(--primary)', fontWeight: 600, marginLeft: '4px' }}>
+                {Number(adSpace.price) / 1000000000} SUI / {t('common.time.day')}
+              </Text>
+              <Tooltip title={t('common.price.discount')}>
+                <QuestionCircleOutlined style={{ marginLeft: 8, color: 'var(--primary)' }} />
+              </Tooltip>
+            </div>
           </Col>
         </Row>
       </div>
@@ -276,7 +287,7 @@ const AdSpaceForm: React.FC<AdSpaceFormProps> = ({
             description={useCustomStartTime && startTime
               ? t('purchase.form.uploadSuccessAlertWithCustomTime', {
                   time: startTime.format('YYYY-MM-DD HH:mm:ss')
-                })
+                }).replace('{time}', startTime.format('YYYY-MM-DD HH:mm:ss'))
               : t('purchase.form.uploadSuccessAlertDesc')}
             type="success"
             showIcon

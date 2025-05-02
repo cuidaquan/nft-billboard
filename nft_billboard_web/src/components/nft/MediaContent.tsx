@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Spin, Button } from 'antd';
+import { Spin, Button, Tag } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import './MediaContent.scss';
@@ -9,9 +9,14 @@ interface MediaContentProps {
   brandName?: string;
   className?: string;
   onError?: () => void;
+  status?: {
+    status: string;
+    text?: string;
+    color: string;
+  };
 }
 
-const MediaContent: React.FC<MediaContentProps> = ({ contentUrl, brandName = '', className = '' }) => {
+const MediaContent: React.FC<MediaContentProps> = ({ contentUrl, brandName = '', className = '', status }) => {
   const { t } = useTranslation();
   const [isVideo, setIsVideo] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -158,6 +163,13 @@ const MediaContent: React.FC<MediaContentProps> = ({ contentUrl, brandName = '',
   if (isVideo) {
     return (
       <div className={`media-container ${className}`}>
+        {status && (
+          <div className="status-tag">
+            <Tag className={`status ${status.status}`} color={status.color}>
+              {status.text || status.status}
+            </Tag>
+          </div>
+        )}
         <video
           src={contentUrl}
           controls
@@ -171,6 +183,13 @@ const MediaContent: React.FC<MediaContentProps> = ({ contentUrl, brandName = '',
 
   return (
     <div className={`media-container ${className}`}>
+      {status && (
+        <div className="status-tag">
+          <Tag className={`status ${status.status}`} color={status.color}>
+            {status.text || status.status}
+          </Tag>
+        </div>
+      )}
       <img
         src={contentUrl}
         alt={brandName}
