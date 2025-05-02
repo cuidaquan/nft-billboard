@@ -190,12 +190,14 @@ const HomePage: React.FC = () => {
 
       <div className="cta-section">
         <Title level={2}>{t('home.cta.title')}</Title>
-        <Paragraph>{t('home.cta.subtitle')}</Paragraph>
-        <Link to="/ad-spaces">
-          <Button type="primary" size="large" icon={<ShoppingOutlined />}>
-            {t('home.cta.button')}
-          </Button>
-        </Link>
+        <Paragraph className="cta-subtitle">{t('home.cta.subtitle')}</Paragraph>
+        <div className="cta-button-container">
+          <Link to="/ad-spaces">
+            <Button type="primary" size="large" icon={<ShoppingOutlined />}>
+              {t('home.cta.button')}
+            </Button>
+          </Link>
+        </div>
       </div>
     </div>
   );

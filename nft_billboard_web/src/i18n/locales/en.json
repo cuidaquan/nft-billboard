@@ -15,7 +15,8 @@
     "links": {
       "sui": "Sui Blockchain",
       "github": "GitHub Repository",
-      "about": "About Us"
+      "about": "Contact Us",
+      "walrus": "Walrus Storage"
     }
   },
   "home": {
@@ -487,7 +488,7 @@
       "partialSuccess": "Transaction submitted, but could not immediately confirm the result. Please refresh the page later to see the update."
     },
     "progress": {
-      "uploading": "Uploading",
+      "title": "Uploading",
       "preparing": "Preparing to upload file...",
       "signing": "Waiting for wallet signature...",
       "uploading": "Uploading file to Walrus storage network...",

@@ -7,6 +7,9 @@ import reportWebVitals from './reportWebVitals';
 // 导入国际化配置
 import './i18n/i18n';
 
+// 导入文本亮度优化样式
+import './styles/textBrightness.css';
+
 // 创建根节点
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

@@ -15,7 +15,8 @@
     "links": {
       "sui": "Sui区块链",
       "github": "GitHub仓库",
-      "about": "关于我们"
+      "about": "联系我们",
+      "walrus": "Walrus存储"
     }
   },
   "home": {
@@ -487,6 +488,7 @@
       "partialSuccess": "交易已提交，但无法立即确认结果。请稍后刷新页面查看更新。"
     },
     "progress": {
+      "title": "正在上传",
       "uploading": "正在上传文件到Walrus存储网络...",
       "preparing": "准备上传文件...",
       "signing": "等待钱包签名交易...",

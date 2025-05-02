@@ -11,11 +11,12 @@ const AppFooter: React.FC = () => {
 
   return (
     <Footer className="app-footer">
-      <Text>{t('footer.copyright', { year: new Date().getFullYear() })}</Text>
+      <Text className="footer-copyright">{t('footer.copyright', { year: new Date().getFullYear() })}</Text>
       <div className="footer-links">
         <Link href="https://sui.io/" target="_blank">{t('footer.links.sui')}</Link>
-        <Link href="https://github.com/" target="_blank">{t('footer.links.github')}</Link>
-        <Link href="/about">{t('footer.links.about')}</Link>
+        <Link href="https://www.walrus.xyz/" target="_blank">{t('footer.links.walrus')}</Link>
+        <Link href="https://github.com/cuidaquan/nft-billboard/" target="_blank">{t('footer.links.github')}</Link>
+        <Link href="https://x.com/NFTBillboardsio/" target="_blank">{t('footer.links.about')}</Link>
       </div>
     </Footer>
   );
