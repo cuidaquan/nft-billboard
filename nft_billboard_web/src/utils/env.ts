@@ -74,7 +74,9 @@ export const getContractPackageId = (): string => {
  * @returns 合约模块名称
  */
 export const getContractModuleName = (): string => {
-  return process.env.REACT_APP_CONTRACT_MODULE_NAME || '';
+  // 直接导入常量，避免动态导入
+  const { MODULE_NAME } = require('../config/constants');
+  return MODULE_NAME;
 };
 
 /**
@@ -90,7 +92,9 @@ export const getFactoryObjectId = (): string => {
  * @returns 时钟ID
  */
 export const getClockId = (): string => {
-  return process.env.REACT_APP_CLOCK_ID || '';
+  // 直接导入常量，避免动态导入
+  const { CLOCK_ID } = require('../config/constants');
+  return CLOCK_ID;
 };
 
 /**
@@ -106,9 +110,9 @@ export const getWalrusEnvironment = (): NetworkType => {
  * @returns Walrus聚合器URL
  */
 export const getWalrusAggregatorUrl = (): string => {
-  return isMainnet()
-    ? process.env.REACT_APP_WALRUS_AGGREGATOR_URL_MAINNET || ''
-    : process.env.REACT_APP_WALRUS_AGGREGATOR_URL_TESTNET || '';
+  // 直接导入常量，避免动态导入
+  const { WALRUS_URLS } = require('../config/constants');
+  return isMainnet() ? WALRUS_URLS.MAINNET_AGGREGATOR_URL : WALRUS_URLS.TESTNET_AGGREGATOR_URL;
 };
 
 /**

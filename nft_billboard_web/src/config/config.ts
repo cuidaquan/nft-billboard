@@ -1,4 +1,5 @@
 import { getFullnodeUrl } from '@mysten/sui/client';
+import { CLOCK_ID, MODULE_NAME } from './constants';
 
 /**
  * 支持的网络类型定义
@@ -55,9 +56,9 @@ export const CONTRACT_CONFIG = {
 
   /**
    * 合约模块名称
-   * 可通过环境变量 REACT_APP_CONTRACT_MODULE_NAME 修改
+   * 这是一个常量，在所有环境中都是相同的
    */
-  MODULE_NAME: process.env.REACT_APP_CONTRACT_MODULE_NAME || 'nft_billboard',
+  MODULE_NAME: MODULE_NAME,
 
   /**
    * 广告位工厂对象ID
@@ -67,9 +68,9 @@ export const CONTRACT_CONFIG = {
 
   /**
    * Clock对象ID
-   * 可通过环境变量 REACT_APP_CLOCK_ID 修改
+   * 这是一个常量，在所有环境中都是相同的
    */
-  CLOCK_ID: process.env.REACT_APP_CLOCK_ID || '0x6',
+  CLOCK_ID: CLOCK_ID,
 };
 
 /**

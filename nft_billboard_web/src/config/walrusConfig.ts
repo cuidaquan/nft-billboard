@@ -3,21 +3,22 @@
  */
 
 import { NetworkName } from './config';
+import { WALRUS_URLS, WAL_COIN_TYPES as CONSTANT_WAL_COIN_TYPES } from './constants';
 
 /**
  * Walrus网络聚合器URL配置
  */
 export const WALRUS_AGGREGATOR_URLS: Record<NetworkName, string> = {
-  mainnet: process.env.REACT_APP_WALRUS_AGGREGATOR_URL_MAINNET || 'https://walrus.globalstake.io/v1/blobs/by-object-id/',
-  testnet: process.env.REACT_APP_WALRUS_AGGREGATOR_URL_TESTNET || 'https://aggregator.walrus-testnet.walrus.space/v1/blobs/by-object-id/'
+  mainnet: WALRUS_URLS.MAINNET_AGGREGATOR_URL,
+  testnet: WALRUS_URLS.TESTNET_AGGREGATOR_URL
 };
 
 /**
  * WAL代币类型配置
  */
 export const WAL_COIN_TYPES: Record<NetworkName, string> = {
-  mainnet: '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL',
-  testnet: '0x8270feb7375eee355e64fdb69c50abb6b5f9393a722883c1cf45f8e26048810a::wal::WAL'
+  mainnet: CONSTANT_WAL_COIN_TYPES.MAINNET,
+  testnet: CONSTANT_WAL_COIN_TYPES.TESTNET
 };
 
 /**
