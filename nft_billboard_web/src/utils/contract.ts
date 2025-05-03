@@ -994,7 +994,7 @@ export function updatePlatformRatioTx(params: { factoryId: string, ratio: number
     target: `${CONTRACT_CONFIG.PACKAGE_ID}::${CONTRACT_CONFIG.MODULE_NAME}::update_platform_ratio`,
     arguments: [
       tx.object(params.factoryId), // Factory 对象
-      tx.pure.u64(params.ratio)   // 新的平台分成比例
+      tx.pure.u8(params.ratio)    // 新的平台分成比例 - 使用u8类型匹配合约参数
     ],
   });
 
