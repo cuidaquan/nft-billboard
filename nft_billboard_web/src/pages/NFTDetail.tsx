@@ -15,6 +15,7 @@ import { BillboardNFT, RenewNFTParams } from '../types';
 import { getNFTDetails, calculateLeasePrice, formatSuiAmount, createRenewLeaseTx } from '../utils/contract';
 import { truncateAddress, formatLeasePeriod } from '../utils/format';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
+import { getWalCoinType } from '../config/walrusConfig';
 import './NFTDetail.scss';
 import { Link } from 'react-router-dom';
 import MediaContent from '../components/nft/MediaContent';
@@ -44,6 +45,10 @@ const NFTDetailPage: React.FC = () => {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [calculatingPrice, setCalculatingPrice] = useState<boolean>(false);
   const [renewPrice, setRenewPrice] = useState<string>('0');
+  const [walletBalance, setWalletBalance] = useState<string>('0');
+  const [insufficientBalance, setInsufficientBalance] = useState<boolean>(false);
+  const [walBalance, setWalBalance] = useState<string>('0');
+  const [needWalBalance, setNeedWalBalance] = useState<boolean>(false);
 
 
 
@@ -89,7 +94,7 @@ const NFTDetailPage: React.FC = () => {
         setRenewPrice(formatSuiAmount(price));
 
         // 如果有账户，检查余额是否足够
-        if (account && suiClient) {
+        if (account && suiClient && nft) {
           try {
             // 获取用户余额
             const { totalBalance } = await suiClient.getBalance({
@@ -100,19 +105,62 @@ const NFTDetailPage: React.FC = () => {
             const priceValue = BigInt(price);
             const balanceValue = BigInt(totalBalance);
 
+            // 保存钱包余额到状态
+            const formattedBalance = formatSuiAmount(totalBalance);
+            setWalletBalance(formattedBalance);
+
             // 显示余额信息
-            console.log('钱包余额:', formatSuiAmount(totalBalance), 'SUI');
+            console.log('钱包余额:', formattedBalance, 'SUI');
             console.log('续租价格:', formatSuiAmount(price), 'SUI');
 
+            // 判断余额是否足够
+            const isBalanceInsufficient = balanceValue < priceValue;
+            setInsufficientBalance(isBalanceInsufficient);
+
             // 如果余额不足，显示警告
-            if (balanceValue < priceValue) {
+            if (isBalanceInsufficient) {
+              // 先使用 t() 函数处理占位符替换，然后将结果传递给 message.warning
+              const warningMsg = t('nftDetail.transaction.insufficientBalance', {
+                price: formatSuiAmount(price),
+                balance: formattedBalance
+              });
               message.warning({
-                content: t('nftDetail.transaction.insufficientBalance', {
-                  price: formatSuiAmount(price),
-                  balance: formatSuiAmount(totalBalance)
-                }),
+                content: warningMsg,
                 duration: 5
               });
+            }
+
+            // 检查是否需要WAL余额（如果NFT内容类型是walrus）
+            const isWalrusStorage = nft.storageSource === 'walrus';
+            setNeedWalBalance(isWalrusStorage);
+
+            if (isWalrusStorage) {
+              try {
+                // 获取WAL代币余额
+                const walCoinType = getWalCoinType();
+                console.log('使用WAL代币类型:', walCoinType);
+
+                const { totalBalance: walTotalBalance } = await suiClient.getBalance({
+                  owner: account.address,
+                  coinType: walCoinType
+                });
+
+                // 保存WAL余额到状态
+                const formattedWalBalance = formatSuiAmount(walTotalBalance);
+                setWalBalance(formattedWalBalance);
+                console.log('WAL余额:', formattedWalBalance, 'WAL');
+
+                // 如果WAL余额为0，显示警告
+                if (walTotalBalance === '0') {
+                  message.warning({
+                    content: t('walrusUpload.upload.noWalBalance'),
+                    duration: 5
+                  });
+                }
+              } catch (walError) {
+                console.error('获取WAL余额失败:', walError);
+                setWalBalance('0');
+              }
             }
           } catch (balanceError) {
             console.error('检查余额失败:', balanceError);
@@ -754,8 +802,15 @@ const NFTDetailPage: React.FC = () => {
             key="submit"
             type="primary"
             loading={submitting || calculatingPrice}
-            disabled={calculatingPrice}
+            disabled={calculatingPrice || insufficientBalance || (needWalBalance && walBalance === '0')}
             onClick={handleRenewLease}
+            title={
+              insufficientBalance
+                ? t('nftDetail.transaction.insufficientBalance', { price: renewPrice, balance: walletBalance })
+                : (needWalBalance && walBalance === '0')
+                  ? t('walrusUpload.upload.noWalBalance')
+                  : ''
+            }
           >
             {t('nftDetail.buttons.renewLease')}
           </Button>
@@ -787,8 +842,26 @@ const NFTDetailPage: React.FC = () => {
               </div>
             ) : (
               <div>
-                <Text strong>{t('nftDetail.modals.renewLease.priceLabel')}</Text>
-                <Text>{renewPrice} SUI</Text>
+                <div style={{ marginBottom: '8px' }}>
+                  <Text strong>{t('nftDetail.modals.renewLease.priceLabel')}</Text>
+                  <Text>{renewPrice} SUI</Text>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Text type="secondary">{t('nftDetail.modals.renewLease.walletBalance')}</Text>
+                  <Text type={insufficientBalance ? 'danger' : 'secondary'} strong={insufficientBalance}>
+                    {walletBalance} SUI {insufficientBalance && <span style={{ color: '#ff4d4f' }}>{t('nftDetail.modals.renewLease.insufficientBalanceHint')}</span>}
+                  </Text>
+                </div>
+
+                {/* 如果需要WAL余额，显示WAL余额 */}
+                {needWalBalance && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                    <Text type="secondary">{t('nftDetail.modals.renewLease.walBalance')}</Text>
+                    <Text type={walBalance === '0' ? 'danger' : 'secondary'} strong={walBalance === '0'}>
+                      {walBalance} WAL {walBalance === '0' && <span style={{ color: '#ff4d4f' }}>{t('nftDetail.modals.renewLease.insufficientBalanceHint')}</span>}
+                    </Text>
+                  </div>
+                )}
               </div>
             )}
           </div>

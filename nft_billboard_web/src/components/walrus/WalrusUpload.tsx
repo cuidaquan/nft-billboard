@@ -39,6 +39,9 @@ interface WalrusUploadProps {
   onChange?: (data: { url: string; blobId?: string; storageSource: string }) => void;
   hideStorageSelector?: boolean; // 是否隐藏存储模式选择器
   aspectRatio?: string; // 新增：广告位比例，如 "16:9"
+  walletBalance?: string; // 钱包SUI余额
+  walBalance?: string; // 钱包WAL余额
+  insufficientBalance?: boolean; // SUI余额是否不足
 }
 
 // 上传阶段枚举
@@ -56,7 +59,10 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
   customStartTime,
   onChange,
   hideStorageSelector = false, // 默认显示存储模式选择器
-  aspectRatio // 广告位比例
+  aspectRatio, // 广告位比例
+  walletBalance = '0', // 钱包SUI余额
+  walBalance = '0', // 钱包WAL余额
+  insufficientBalance = false // SUI余额是否不足
 }) => {
   const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
@@ -261,6 +267,21 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
       return false;
     }
 
+    // 检查SUI余额是否不足
+    if (insufficientBalance) {
+      // 使用"购买广告位"作为价格描述，而不是具体数值
+      message.error(t('nftDetail.transaction.insufficientBalanceGeneric', {
+        balance: walletBalance
+      }));
+      return false;
+    }
+
+    // 检查WAL余额是否为0（仅在Walrus模式下）
+    if (storageMode === 'walrus' && walBalance === '0') {
+      message.error(t('walrusUpload.upload.noWalBalance'));
+      return false;
+    }
+
     // 检查文件类型
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
       message.error(t('walrusUpload.upload.unsupportedType'));
@@ -270,7 +291,9 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
     // 检查文件大小
     if (file.size > MAX_FILE_SIZE) {
       const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
-      message.error(t('walrusUpload.upload.fileTooLarge', { size: fileSizeMB }));
+      // 先使用 t() 函数处理占位符替换，然后将结果传递给 message.error
+      const errorMsg = t('walrusUpload.upload.fileTooLarge', { size: fileSizeMB });
+      message.error(errorMsg);
       return false;
     }
 
@@ -367,7 +390,7 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
     multiple: false,
     beforeUpload: handleUpload,
     showUploadList: false,
-    disabled: uploading || !account?.address,
+    disabled: uploading || !account?.address || insufficientBalance || (storageMode === 'walrus' && walBalance === '0'),
     accept: acceptFileTypes, // 添加accept属性，限制文件选择对话框中显示的文件类型
   };
 
@@ -540,7 +563,7 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
         }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <InfoCircleOutlined style={{ color: '#1677ff', marginRight: '8px' }} />
-            <span>{t('walrusUpload.upload.ratioGuidance')}</span>
+            <span>{t('walrusUpload.upload.ratioGuidance', { ratio: aspectRatio })}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', marginTop: '10px' }}>
             <div className="ratio-preview" style={{
@@ -607,9 +630,14 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
                 <InboxOutlined />
               </p>
               <p className="ant-upload-text">
-                {account?.address
-                  ? t('walrusUpload.upload.dragText')
-                  : t('walrusUpload.upload.connectWalletFirst')}
+                {!account?.address
+                  ? t('walrusUpload.upload.connectWalletFirst')
+                  : insufficientBalance
+                    ? t('nftDetail.transaction.insufficientBalanceGeneric', { balance: walletBalance })
+                    : storageMode === 'walrus' && walBalance === '0'
+                      ? t('walrusUpload.upload.noWalBalance')
+                      : t('walrusUpload.upload.dragText')
+                }
               </p>
               <p className="ant-upload-hint">
                 {t('walrusUpload.upload.hint')}
@@ -633,7 +661,7 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
               />
               <Button
                 type="primary"
-                disabled={!externalUrl || !isValidUrl(externalUrl)}
+                disabled={!externalUrl || !isValidUrl(externalUrl) || insufficientBalance}
                 style={{
                   marginLeft: '8px',
                   height: '32px',
@@ -642,8 +670,9 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
                   border: 'none',
                   boxShadow: '0 2px 6px rgba(78, 99, 255, 0.2)'
                 }}
+                title={insufficientBalance ? t('nftDetail.transaction.insufficientBalanceGeneric', { balance: walletBalance }) : ''}
                 onClick={() => {
-                  if (externalUrl && isValidUrl(externalUrl)) {
+                  if (externalUrl && isValidUrl(externalUrl) && !insufficientBalance) {
                     // 通知父组件URL已确认
                     onSuccess?.(externalUrl, undefined, 'external');
                     // 设置上传成功状态
@@ -653,6 +682,11 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
                     setIsImage(checkMediaType(externalUrl) === 'image');
                     // 显示成功消息
                     message.success(t('purchase.form.externalUrlSuccess'));
+                  } else if (insufficientBalance) {
+                    // 显示余额不足警告
+                    message.error(t('nftDetail.transaction.insufficientBalanceGeneric', {
+                      balance: walletBalance
+                    }));
                   }
                 }}
               >

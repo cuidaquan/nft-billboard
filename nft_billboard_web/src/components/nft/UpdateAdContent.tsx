@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Radio, Alert, Typography, message, Spin } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { BillboardNFT } from '../../types';
 import { walrusService } from '../../utils/walrus';
 import MediaContent from './MediaContent';
 import WalrusUpload from '../walrus/WalrusUpload';
 import './UpdateAdContent.scss';
+import { formatSuiAmount } from '../../utils/contract';
+import { getWalCoinType } from '../../config/walrusConfig';
 
 const { Title, Text } = Typography;
 
@@ -19,7 +21,13 @@ interface UpdateAdContentProps {
 const UpdateAdContent: React.FC<UpdateAdContentProps> = ({ nft, onSuccess, onCancel }) => {
   const { t } = useTranslation();
   const account = useCurrentAccount();
+  const suiClient = useSuiClient();
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+
+  // 添加钱包余额相关状态
+  const [walletBalance, setWalletBalance] = useState<string>('0');
+  const [insufficientBalance, setInsufficientBalance] = useState<boolean>(false);
+  const [walBalance, setWalBalance] = useState<string>('0');
 
   // 状态管理
   const [storageMode, setStorageMode] = useState<'external' | 'walrus'>(
@@ -34,6 +42,55 @@ const UpdateAdContent: React.FC<UpdateAdContentProps> = ({ nft, onSuccess, onCan
   const [submitting, setSubmitting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
   const [showDeleteWarning, setShowDeleteWarning] = useState(false);
+
+  // 获取钱包余额
+  useEffect(() => {
+    const fetchBalances = async () => {
+      if (account && suiClient) {
+        try {
+          // 获取SUI代币余额
+          const { totalBalance } = await suiClient.getBalance({
+            owner: account.address,
+            coinType: '0x2::sui::SUI'
+          });
+
+          // 保存钱包余额到状态
+          const formattedBalance = formatSuiAmount(totalBalance);
+          setWalletBalance(formattedBalance);
+          console.log('钱包余额:', formattedBalance, 'SUI');
+
+          // 更新内容只需要支付少量gas费用，不需要检查SUI余额是否足够
+          // 只需要检查WAL余额是否为0（如果选择上传到Walrus）
+          setInsufficientBalance(false); // 更新内容不消耗SUI，所以不会出现SUI余额不足的情况
+
+          // 获取WAL代币余额
+          try {
+            // 从配置文件获取当前环境的WAL代币类型
+            const walCoinType = getWalCoinType();
+            console.log('使用WAL代币类型:', walCoinType);
+
+            const { totalBalance: walTotalBalance } = await suiClient.getBalance({
+              owner: account.address,
+              coinType: walCoinType
+            });
+
+            // 保存WAL余额到状态
+            const formattedWalBalance = formatSuiAmount(walTotalBalance);
+            setWalBalance(formattedWalBalance);
+            console.log('WAL余额:', formattedWalBalance, 'WAL');
+          } catch (walError) {
+            console.error('获取WAL余额失败:', walError);
+            // 如果获取WAL余额失败，设置为0
+            setWalBalance('0');
+          }
+        } catch (error) {
+          console.error('获取余额失败:', error);
+        }
+      }
+    };
+
+    fetchBalances();
+  }, [account, suiClient]);
 
   // 处理存储模式变更
   useEffect(() => {
@@ -463,6 +520,9 @@ const UpdateAdContent: React.FC<UpdateAdContentProps> = ({ nft, onSuccess, onCan
             onSuccess={handleWalrusSuccess}
             leaseDays={calculateRemainingLeaseDays(nft)}
             hideStorageSelector={true} // 隐藏存储模式选择器，因为已经在上方选择了
+            walletBalance={walletBalance}
+            walBalance={walBalance}
+            insufficientBalance={insufficientBalance}
           />
         )}
       </div>
@@ -486,8 +546,10 @@ const UpdateAdContent: React.FC<UpdateAdContentProps> = ({ nft, onSuccess, onCan
           onClick={handleSubmit}
           disabled={
             (storageMode === 'external' && !externalUrl) ||
-            (storageMode === 'walrus' && !newContentUrl)
+            (storageMode === 'walrus' && !newContentUrl) ||
+            (storageMode === 'walrus' && walBalance === '0')
           }
+          title={storageMode === 'walrus' && walBalance === '0' ? t('walrusUpload.upload.noWalBalance') : ''}
         >
           {t('common.buttons.update')}
         </Button>

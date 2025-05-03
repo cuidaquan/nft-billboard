@@ -1282,7 +1282,7 @@ const ManagePage: React.FC = () => {
 
                           <Alert
                             message={t('manage.platformManage.platformRatio.currentRatio')}
-                            description={t('manage.platformManage.platformRatio.currentRatioDesc').replace(/%/g, `${currentPlatformRatio}%`)}
+                            description={t('manage.platformManage.platformRatio.currentRatioDesc', { ratio: currentPlatformRatio })}
                             type="info"
                             showIcon
                             style={{ marginBottom: 16 }}

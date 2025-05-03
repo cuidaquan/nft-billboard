@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Typography, Card, Divider, Select, Space, Spin, Row, Col, Tooltip, Slider, InputNumber, DatePicker, Switch, Alert } from 'antd';
-import { InfoCircleOutlined, ShoppingCartOutlined, QuestionCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Typography, Card, Divider, Select, Space, Spin, Row, Col, Tooltip, Slider, InputNumber, DatePicker, Switch, Alert, message } from 'antd';
+import { InfoCircleOutlined, ShoppingCartOutlined, QuestionCircleOutlined, ClockCircleOutlined, WalletOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { AdSpace, PurchaseAdSpaceParams } from '../../types';
 import { calculateLeasePrice, formatSuiAmount } from '../../utils/contract';
 import WalrusUpload from '../walrus/WalrusUpload';
 import dayjs from 'dayjs';
 import './AdSpaceForm.scss';
+import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
+import { getWalCoinType } from '../../config/walrusConfig';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -43,9 +45,18 @@ const AdSpaceForm: React.FC<AdSpaceFormProps> = ({
     storageSource: 'external'
   });
 
-  // 获取租赁价格
+  // 添加钱包余额相关状态
+  const [walletBalance, setWalletBalance] = useState<string>('0');
+  const [insufficientBalance, setInsufficientBalance] = useState<boolean>(false);
+  const [walBalance, setWalBalance] = useState<string>('0');
+
+  // 获取钱包和Sui客户端
+  const account = useCurrentAccount();
+  const suiClient = useSuiClient();
+
+  // 获取租赁价格和检查钱包余额
   useEffect(() => {
-    const fetchPrice = async () => {
+    const fetchPriceAndCheckBalance = async () => {
       setCalculating(true);
       try {
         console.log('正在获取广告位价格', adSpace.id, leaseDays);
@@ -60,6 +71,68 @@ const AdSpaceForm: React.FC<AdSpaceFormProps> = ({
         }
 
         setTotalPrice(formattedPrice);
+
+        // 如果有账户，检查余额是否足够
+        if (account && suiClient) {
+          try {
+            // 获取SUI代币余额
+            const { totalBalance } = await suiClient.getBalance({
+              owner: account.address,
+              coinType: '0x2::sui::SUI'
+            });
+
+            const priceValue = BigInt(price);
+            const balanceValue = BigInt(totalBalance);
+
+            // 保存钱包余额到状态
+            const formattedBalance = formatSuiAmount(totalBalance);
+            setWalletBalance(formattedBalance);
+
+            // 显示余额信息
+            console.log('钱包余额:', formattedBalance, 'SUI');
+            console.log('购买价格:', formattedPrice, 'SUI');
+
+            // 判断余额是否足够
+            const isBalanceInsufficient = balanceValue < priceValue;
+            setInsufficientBalance(isBalanceInsufficient);
+
+            // 如果余额不足，显示警告
+            if (isBalanceInsufficient) {
+              // 先使用 t() 函数处理占位符替换，然后将结果传递给 message.warning
+              const warningMsg = t('nftDetail.transaction.insufficientBalance', {
+                price: formattedPrice,
+                balance: formattedBalance
+              });
+              message.warning({
+                content: warningMsg,
+                duration: 5
+              });
+            }
+
+            // 获取WAL代币余额（如果存在）
+            try {
+              // 从配置文件获取当前环境的WAL代币类型
+              const walCoinType = getWalCoinType();
+              console.log('使用WAL代币类型:', walCoinType);
+
+              const { totalBalance: walTotalBalance } = await suiClient.getBalance({
+                owner: account.address,
+                coinType: walCoinType
+              });
+
+              // 保存WAL余额到状态
+              const formattedWalBalance = formatSuiAmount(walTotalBalance);
+              setWalBalance(formattedWalBalance);
+              console.log('WAL余额:', formattedWalBalance, 'WAL');
+            } catch (walError) {
+              console.error('获取WAL余额失败:', walError);
+              // 如果获取WAL余额失败，设置为0
+              setWalBalance('0');
+            }
+          } catch (balanceError) {
+            console.error('检查余额失败:', balanceError);
+          }
+        }
       } catch (error) {
         console.error('获取价格失败:', error);
         setTotalPrice('');
@@ -68,8 +141,8 @@ const AdSpaceForm: React.FC<AdSpaceFormProps> = ({
       }
     };
 
-    fetchPrice();
-  }, [adSpace.id, leaseDays, adSpace.price]);
+    fetchPriceAndCheckBalance();
+  }, [adSpace.id, leaseDays, adSpace.price, account, suiClient]);
 
   // 处理内容上传参数变更
   const handleContentParamsChange = (data: { url: string; blobId?: string; storageSource: string }) => {
@@ -287,7 +360,7 @@ const AdSpaceForm: React.FC<AdSpaceFormProps> = ({
             description={useCustomStartTime && startTime
               ? t('purchase.form.uploadSuccessAlertWithCustomTime', {
                   time: startTime.format('YYYY-MM-DD HH:mm:ss')
-                }).replace('{time}', startTime.format('YYYY-MM-DD HH:mm:ss'))
+                })
               : t('purchase.form.uploadSuccessAlertDesc')}
             type="success"
             showIcon
@@ -323,6 +396,9 @@ const AdSpaceForm: React.FC<AdSpaceFormProps> = ({
                 customStartTime={useCustomStartTime && startTime ? Math.floor(startTime.valueOf() / 1000) : undefined}
                 onChange={handleContentParamsChange}
                 aspectRatio={adSpace.aspectRatio}
+                walletBalance={walletBalance}
+                walBalance={walBalance}
+                insufficientBalance={insufficientBalance}
               />
             </Form.Item>
           </Col>
@@ -368,6 +444,38 @@ const AdSpaceForm: React.FC<AdSpaceFormProps> = ({
                     )}
                   </Col>
                 </Row>
+
+                {/* 显示钱包余额 */}
+                <Row justify="space-between" align="middle" style={{ marginTop: '8px' }}>
+                  <Col>
+                    <Space>
+                      <WalletOutlined />
+                      <Text type="secondary">{t('nftDetail.modals.renewLease.walletBalance')}</Text>
+                    </Space>
+                  </Col>
+                  <Col>
+                    <Text type={insufficientBalance ? 'danger' : 'secondary'} strong={insufficientBalance}>
+                      {walletBalance} SUI {insufficientBalance && <span style={{ color: '#ff4d4f' }}>{t('nftDetail.modals.renewLease.insufficientBalanceHint')}</span>}
+                    </Text>
+                  </Col>
+                </Row>
+
+                {/* 如果选择上传到Walrus，显示WAL余额 */}
+                {contentParams.storageSource === 'walrus' && (
+                  <Row justify="space-between" align="middle" style={{ marginTop: '8px' }}>
+                    <Col>
+                      <Space>
+                        <WalletOutlined />
+                        <Text type="secondary">{t('nftDetail.modals.renewLease.walBalance')}</Text>
+                      </Space>
+                    </Col>
+                    <Col>
+                      <Text type="secondary">
+                        {walBalance} WAL
+                      </Text>
+                    </Col>
+                  </Row>
+                )}
               </div>
             )}
           </Space>
@@ -378,9 +486,10 @@ const AdSpaceForm: React.FC<AdSpaceFormProps> = ({
             type="primary"
             htmlType="submit"
             loading={isLoading || calculating}
-            disabled={calculating || totalPrice === 'NaN' || !totalPrice}
+            disabled={calculating || totalPrice === 'NaN' || !totalPrice || insufficientBalance}
             className="submit-button"
             icon={<ShoppingCartOutlined />}
+            title={insufficientBalance ? t('nftDetail.transaction.insufficientBalance', { price: totalPrice, balance: walletBalance }) : ''}
           >
             {t('purchase.form.confirmPurchase')}
           </Button>

@@ -202,7 +202,7 @@
       "confirmPurchase": "确认购买",
       "uploadSuccessAlert": "广告内容已成功上传",
       "uploadSuccessAlertDesc": "广告内容已成功上传到Walrus存储网络，租期设置已锁定。",
-      "uploadSuccessAlertWithCustomTime": "广告内容已成功上传，将于 {time} 开始展示",
+      "uploadSuccessAlertWithCustomTime": "广告内容已成功上传，将于 {{time}} 开始展示",
       "externalUrlAlert": "外部URL已设置",
       "externalUrlAlertDesc": "您已设置外部URL作为广告内容，租期设置可以随时修改。",
       "externalUrlSuccess": "外部URL已成功设置"
@@ -278,6 +278,9 @@
         "daysExtra": "请输入1-365天的整数，续租天数越长折扣越多",
         "calculatingPrice": "计算价格中...",
         "priceLabel": "续租价格: ",
+        "walletBalance": "钱包余额:",
+        "walBalance": "WAL余额:",
+        "insufficientBalanceHint": "（余额不足）",
         "description": "续租将延长NFT的租赁期限，价格由智能合约根据续租天数动态计算。续租天数范围：1-365天。"
       }
     },
@@ -298,7 +301,8 @@
       "renewFailedUserCancelled": "您已取消续租操作",
       "invalidDays": "请选择有效的续租天数",
       "invalidPrice": "无效的续租价格，请刷新页面重试",
-      "insufficientBalance": "余额不足！需要 {price} SUI，但钱包只有 {balance} SUI",
+      "insufficientBalance": "余额不足！需要 {{price}} SUI，但钱包只有 {{balance}} SUI",
+      "insufficientBalanceGeneric": "余额不足！您的钱包余额只有 {{balance}} SUI",
       "expiredNft": "此NFT已过期，根据合约规定，不能对已过期的NFT进行续租。",
       "expiredNftWarning": "由于合约限制，当前只能对未过期的NFT进行续租。此NFT已过期，请联系管理员。"
     },
@@ -421,7 +425,7 @@
         "rangeError": "分成比例必须在0-100之间",
         "placeholder": "输入0-100之间的数字",
         "currentRatio": "当前平台分成比例",
-        "currentRatioDesc": "%（当广告位被购买时，平台将收取总价的%作为服务费）",
+        "currentRatioDesc": "{{ratio}}%（当广告位被购买时，平台将收取总价的{{ratio}}%作为服务费）",
         "updateButton": "更新分成比例",
         "updateSuccess": "平台分成比例更新成功！",
         "updateFailed": "平台分成比例更新失败",
@@ -474,10 +478,11 @@
       "requirements": "支持的格式：PNG、JPG、GIF、WEBP图片或MP4、WEBM、MOV视频",
       "maxSize": "最大文件大小：10MB",
       "unsupportedType": "不支持的文件类型，请上传PNG、JPG、GIF、WEBP图片或MP4、WEBM、MOV视频",
-      "fileTooLarge": "文件大小超过限制，最大允许10MB，当前文件大小{size}MB",
+      "fileTooLarge": "文件大小超过限制，最大允许10MB，当前文件大小{{size}}MB",
       "connectWalletError": "请先连接钱包",
       "uploadSuccess": "文件上传成功",
-      "ratioGuidance": "请使用符合比例的图片或视频以获得最佳显示效果"
+      "ratioGuidance": "请使用符合{{ratio}}比例的图片或视频以获得最佳显示效果",
+      "noWalBalance": "您的WAL代币余额为0，无法上传到Walrus存储"
     },
     "walrusUpdateWarning": "您正在使用Walrus上传新的广告内容。更新完成后，原Walrus存储的内容将被删除，可能返还部分存储费用。",
     "externalToWalrusWarning": "您正在从外部URL切换到Walrus上传。上传后的内容将存储在Walrus上，并按租期收取存储费用。",

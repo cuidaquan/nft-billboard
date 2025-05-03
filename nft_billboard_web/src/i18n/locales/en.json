@@ -202,7 +202,7 @@
       "confirmPurchase": "Confirm Purchase",
       "uploadSuccessAlert": "Ad content uploaded successfully",
       "uploadSuccessAlertDesc": "Ad content has been successfully uploaded to Walrus storage network, lease settings are now locked.",
-      "uploadSuccessAlertWithCustomTime": "Ad content uploaded successfully, will be displayed starting from {time}",
+      "uploadSuccessAlertWithCustomTime": "Ad content uploaded successfully, will be displayed starting from {{time}}",
       "externalUrlAlert": "External URL set",
       "externalUrlAlertDesc": "You have set an external URL as ad content, lease settings can be modified at any time.",
       "externalUrlSuccess": "External URL has been successfully set"
@@ -278,6 +278,9 @@
         "daysExtra": "Enter an integer between 1-365 days. Longer lease periods offer better discounts",
         "calculatingPrice": "Calculating price...",
         "priceLabel": "Renewal Price: ",
+        "walletBalance": "Wallet Balance:",
+        "walBalance": "WAL Balance:",
+        "insufficientBalanceHint": "(Insufficient Balance)",
         "description": "Renewal will extend the NFT lease period. Price is dynamically calculated by the smart contract based on renewal days. Renewal range: 1-365 days."
       }
     },
@@ -298,7 +301,8 @@
       "renewFailedUserCancelled": "You have cancelled the renewal operation",
       "invalidDays": "Please select valid renewal days",
       "invalidPrice": "Invalid renewal price, please refresh the page and try again",
-      "insufficientBalance": "Insufficient balance! Need {price} SUI, but wallet only has {balance} SUI",
+      "insufficientBalance": "Insufficient balance! Need {{price}} SUI, but wallet only has {{balance}} SUI",
+      "insufficientBalanceGeneric": "Insufficient balance! Your wallet only has {{balance}} SUI",
       "expiredNft": "This NFT has expired. According to contract rules, expired NFTs cannot be renewed.",
       "expiredNftWarning": "Due to contract limitations, currently only non-expired NFTs can be renewed. This NFT has expired, please contact the administrator."
     },
@@ -421,7 +425,7 @@
         "rangeError": "Ratio must be between 0-100",
         "placeholder": "Enter a number between 0-100",
         "currentRatio": "Current Platform Ratio",
-        "currentRatioDesc": "% (When an ad space is purchased, the platform will charge % of the total price as a service fee)",
+        "currentRatioDesc": "{{ratio}}% (When an ad space is purchased, the platform will charge {{ratio}}% of the total price as a service fee)",
         "updateButton": "Update Ratio",
         "updateSuccess": "Platform ratio updated successfully!",
         "updateFailed": "Failed to update platform ratio",
@@ -474,10 +478,11 @@
       "requirements": "Supported formats: PNG, JPG, GIF, WEBP images or MP4, WEBM, MOV videos",
       "maxSize": "Maximum file size: 10MB",
       "unsupportedType": "Unsupported file type, please upload PNG, JPG, GIF, WEBP images or MP4, WEBM, MOV videos",
-      "fileTooLarge": "File size exceeds limit, maximum allowed is 10MB, current file size is {size}MB",
+      "fileTooLarge": "File size exceeds limit, maximum allowed is 10MB, current file size is {{size}}MB",
       "connectWalletError": "Please connect wallet first",
       "uploadSuccess": "File uploaded successfully",
-      "ratioGuidance": "Please use images or videos with proper aspect ratio for best display"
+      "ratioGuidance": "Please use images or videos with proper {{ratio}} aspect ratio for best display",
+      "noWalBalance": "Your WAL token balance is 0, cannot upload to Walrus storage"
     },
     "walrusUpdateWarning": "You are uploading new ad content to Walrus. After the update, the original Walrus content will be deleted, potentially refunding some storage fees.",
     "externalToWalrusWarning": "You are switching from external URL to Walrus upload. The uploaded content will be stored on Walrus and storage fees will be charged based on your lease period.",
