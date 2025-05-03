@@ -429,7 +429,11 @@
         "updateButton": "Update Ratio",
         "updateSuccess": "Platform ratio updated successfully!",
         "updateFailed": "Failed to update platform ratio",
-        "updating": "Updating platform ratio..."
+        "updating": "Updating platform ratio...",
+        "waitingConfirmation": "Waiting for transaction confirmation...",
+        "manuallyUpdated": "Unable to confirm update from blockchain, UI manually updated",
+        "updateUnconfirmed": "Transaction submitted, but unable to confirm update result. Please refresh the page later to see the latest data.",
+        "userRejected": "You have cancelled the transaction"
       },
       "registerDev": {
         "title": "Register Game Developer",
@@ -440,7 +444,8 @@
         "alreadyRegistered": "This address is already registered as a game developer",
         "executing": "Executing transaction...",
         "success": "Game developer registered successfully!",
-        "refreshing": "Refreshing developer list..."
+        "refreshing": "Refreshing developer list...",
+        "userRejected": "You have cancelled the transaction"
       },
       "registeredDevs": {
         "title": "Registered Game Developers",
@@ -457,7 +462,9 @@
         "manuallyRemoved": "Developer manually removed from the list",
         "manuallyUpdated": "Unable to get the latest list from the contract, manually updated",
         "removeFailed": "Failed to remove game developer",
-        "manuallyAdded": "Developer manually added to the list"
+        "manuallyAdded": "Developer manually added to the list",
+        "updateUnconfirmed": "Transaction submitted, but unable to confirm update result. Please refresh the page later to see the latest data.",
+        "userRejected": "You have cancelled the transaction"
       }
     },
     "manageDev": {
@@ -481,6 +488,8 @@
       "fileTooLarge": "File size exceeds limit, maximum allowed is 10MB, current file size is {{size}}MB",
       "connectWalletError": "Please connect wallet first",
       "uploadSuccess": "File uploaded successfully",
+      "uploadFailed": "File upload failed",
+      "blobUploadFailed": "Blob upload failed",
       "ratioGuidance": "Please use images or videos with proper {{ratio}} aspect ratio for best display",
       "noWalBalance": "Your WAL token balance is 0, cannot upload to Walrus storage"
     },
@@ -489,9 +498,11 @@
     "externalUrlWarning": "You are using an external URL. Please ensure your URL is accessible and the content complies with platform regulations.",
     "noticeTitle": "Notice",
     "deleteWalrus": {
+      "notice": "NFT content has been updated successfully. Now deleting original Walrus content to free up storage space. You can confirm or reject this operation in your wallet, it will not affect the NFT content update",
       "deleting": "Deleting original Walrus content...",
       "success": "Original Walrus content deleted",
-      "error": "Failed to delete original Walrus content, but update operation completed"
+      "error": "Failed to delete original Walrus content, but update operation completed",
+      "userRejected": "You have cancelled deleting the original Walrus content, but the NFT content has been successfully updated"
     },
     "validation": {
       "invalidUrl": "Please enter a valid URL",
@@ -508,6 +519,7 @@
       "title": "Uploading",
       "preparing": "Preparing to upload file...",
       "signing": "Waiting for wallet signature...",
+      "signSuccess": "Transaction signed successfully",
       "uploading": "Uploading file to Walrus storage network...",
       "finalizing": "Finalizing upload, generating access link...",
       "completed": "Upload completed!",
@@ -575,7 +587,8 @@
       "invalidDate": "Invalid date",
       "required": "This field is required",
       "invalidAddress": "Please enter a valid SUI address",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      "userRejected": "You have cancelled the transaction"
     }
   }
 }

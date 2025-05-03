@@ -1,13 +1,14 @@
  import React, { useState, useEffect } from 'react';
  import { useParams, useNavigate } from 'react-router-dom';
  import { Typography, Spin, Alert, message, Button } from 'antd';
- import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
+ import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
  import { useTranslation } from 'react-i18next';
  import { AdSpace, PurchaseAdSpaceParams, UserRole } from '../types';
  import AdSpaceForm from '../components/adSpace/AdSpaceForm';
  import { getAdSpaceDetails, createPurchaseAdSpaceTx, getUserNFTs, getNFTDetails } from '../utils/contract';
  import { ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons';
  import './PurchaseAdSpace.scss';
+ import { useWalletTransaction } from '../hooks/useWalletTransaction';
 
  const { Title, Paragraph } = Typography;
 
@@ -17,7 +18,7 @@
    const navigate = useNavigate();
    const account = useCurrentAccount();
    const suiClient = useSuiClient();
-   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+   const { executeTransaction } = useWalletTransaction();
 
    const [adSpace, setAdSpace] = useState<AdSpace | null>(null);
    const [loading, setLoading] = useState<boolean>(true);
@@ -162,27 +163,32 @@
        setSubmitting(true);
        setError(null);
 
-       // 显示交易执行中状态
-       message.loading({ content: t('purchase.transaction.purchasing'), key: 'purchaseAdSpace', duration: 0 });
-
        // 创建交易
        const txb = createPurchaseAdSpaceTx(values);
 
        // 执行交易
-       await signAndExecute({
-         transaction: txb
+       const { success } = await executeTransaction(txb, {
+         loadingMessage: t('purchase.transaction.purchasing'),
+         successMessage: t('purchase.transaction.submitted'),
+         loadingKey: 'purchaseAdSpace',
+         successKey: 'purchaseAdSpace',
+         userRejectedMessage: t('common.messages.userRejected')
        });
 
-       // 交易已提交，显示提交成功消息
-       message.success({ content: t('purchase.transaction.submitted'), key: 'purchaseAdSpace', duration: 2 });
+       // 如果交易被用户拒绝或失败，直接返回
+       if (!success) {
+         return;
+       }
+
+       // 交易已提交，显示等待确认消息
        message.loading({ content: t('purchase.transaction.waitingConfirmation'), key: 'confirmPurchase', duration: 0 });
 
        // 使用轮询方式检查交易结果，最多尝试5次
        let attempts = 0;
        const maxAttempts = 5;
-       let success = false;
+       let confirmSuccess = false;
 
-       while (attempts < maxAttempts && !success) {
+       while (attempts < maxAttempts && !confirmSuccess) {
          attempts++;
          // 增加等待时间
          const delay = 2000 * attempts;
@@ -200,7 +206,7 @@
              nft.adSpaceId === adSpace.id && nft.isActive);
 
            if (foundNewNFT) {
-             success = true;
+             confirmSuccess = true;
              console.log('成功确认广告位购买');
 
              // 显示成功确认消息

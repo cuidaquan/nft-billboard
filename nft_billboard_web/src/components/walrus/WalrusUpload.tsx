@@ -10,6 +10,7 @@ import { Transaction } from '@mysten/sui/transactions';
 import { DEFAULT_NETWORK } from '../../config/config';
 import { WALRUS_CONFIG } from '../../config/walrusConfig';
 import { useTranslation } from 'react-i18next';
+import { useWalletTransaction } from '../../hooks/useWalletTransaction';
 
 const { Dragger } = Upload;
 
@@ -82,6 +83,7 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
 
   const account = useCurrentAccount();
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+  const { executeTransaction } = useWalletTransaction();
 
   // 从配置获取当前网络
   const networkConfig = DEFAULT_NETWORK;
@@ -126,25 +128,27 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
               transactionBlock.setSender(account.address);
             }
 
-            const response = await new Promise((resolve, reject) => {
-              signAndExecute(
-                {
-                  transaction: transactionBlock,
-                  chain: chainId,
-                  account: account
-                },
-                {
-                  onSuccess: (data) => {
-                    console.log('交易签名成功:', data);
-                    resolve(data);
-                  },
-                  onError: (error) => {
-                    console.error('交易签名失败:', error);
-                    reject(error);
-                  }
-                }
-              );
+            // 使用新的executeTransaction函数
+            message.loading({
+              content: t('walrusUpload.progress.signing'),
+              key: 'walrusUpload',
+              duration: 0
             });
+
+            const { success, result } = await executeTransaction(transactionBlock, {
+              loadingMessage: t('walrusUpload.progress.signing'),
+              successMessage: t('walrusUpload.progress.signSuccess'),
+              loadingKey: 'walrusUpload',
+              successKey: 'walrusUpload',
+              userRejectedMessage: t('common.messages.userRejected')
+            });
+
+            // 如果交易被用户拒绝或失败，直接返回
+            if (!success) {
+              throw new Error(t('common.messages.userRejected'));
+            }
+
+            const response = result;
 
             // 签名完成后更新进度
             setUploadProgress(50);
@@ -157,7 +161,27 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
             return response;
           } catch (err: any) {
             console.error('无法处理Uint8Array类型的交易:', err);
-            throw new Error(`无法处理Uint8Array类型的交易: ${err.message || '未知错误'}`);
+
+            // 检查是否是用户拒绝交易
+            if (err.message && (
+              err.message.includes('User rejected') ||
+              err.message.includes('User cancelled') ||
+              err.message.includes('User denied') ||
+              err.message.includes('用户拒绝') ||
+              err.message.includes('用户取消') ||
+              err.message.includes(t('common.messages.userRejected'))
+            )) {
+              // 用户拒绝交易，显示友好提示
+              message.info({
+                content: t('common.messages.userRejected'),
+                key: 'walrusUpload',
+                duration: 2
+              });
+              throw new Error(t('common.messages.userRejected'));
+            } else {
+              // 其他错误
+              throw new Error(`${t('walrusUpload.upload.blobUploadFailed')}: ${err.message || t('common.messages.unknown')}`);
+            }
           }
         }
 
@@ -182,25 +206,27 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
 
         // 使用 Promise 包装 signAndExecute 调用，确保它返回结果
         try {
-          const response = await new Promise((resolve, reject) => {
-            signAndExecute(
-              {
-                transaction: transactionToSign,
-                chain: chainId,
-                account: account
-              },
-              {
-                onSuccess: (data) => {
-                  console.log('交易签名成功:', data);
-                  resolve(data);
-                },
-                onError: (error) => {
-                  console.error('交易签名失败:', error);
-                  reject(error);
-                }
-              }
-            );
+          // 使用新的executeTransaction函数
+          message.loading({
+            content: t('walrusUpload.progress.signing'),
+            key: 'walrusUpload',
+            duration: 0
           });
+
+          const { success, result } = await executeTransaction(transactionToSign, {
+            loadingMessage: t('walrusUpload.progress.signing'),
+            successMessage: t('walrusUpload.progress.signSuccess'),
+            loadingKey: 'walrusUpload',
+            successKey: 'walrusUpload',
+            userRejectedMessage: t('common.messages.userRejected')
+          });
+
+          // 如果交易被用户拒绝或失败，直接返回
+          if (!success) {
+            throw new Error(t('common.messages.userRejected'));
+          }
+
+          const response = result;
 
           // 签名完成后更新进度
           setUploadProgress(50);
@@ -211,9 +237,29 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
           }
 
           return response;
-        } catch (err) {
+        } catch (err: any) {
           console.error('交易签名最终失败:', err);
-          throw err;
+
+          // 检查是否是用户拒绝交易
+          if (err.message && (
+            err.message.includes('User rejected') ||
+            err.message.includes('User cancelled') ||
+            err.message.includes('User denied') ||
+            err.message.includes('用户拒绝') ||
+            err.message.includes('用户取消') ||
+            err.message.includes(t('common.messages.userRejected'))
+          )) {
+            // 用户拒绝交易，显示友好提示
+            message.info({
+              content: t('common.messages.userRejected'),
+              key: 'walrusUpload',
+              duration: 2
+            });
+            throw new Error(t('common.messages.userRejected'));
+          } else {
+            // 其他错误
+            throw new Error(`${t('walrusUpload.upload.blobUploadFailed')}: ${err.message || t('common.messages.unknown')}`);
+          }
         }
       },
 
@@ -363,7 +409,31 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
     } catch (error) {
       console.error('文件上传失败:', error);
       const err = error instanceof Error ? error : new Error(String(error));
-      message.error('文件上传失败: ' + err.message);
+
+      // 检查是否是用户拒绝交易
+      if (err.message && (
+        err.message.includes('User rejected') ||
+        err.message.includes('User cancelled') ||
+        err.message.includes('User denied') ||
+        err.message.includes('用户拒绝') ||
+        err.message.includes('用户取消') ||
+        err.message.includes(t('common.messages.userRejected'))
+      )) {
+        // 用户拒绝交易，显示友好提示
+        message.info({
+          content: t('common.messages.userRejected'),
+          key: 'walrusUpload',
+          duration: 2
+        });
+      } else {
+        // 其他错误
+        message.error({
+          content: `${t('walrusUpload.upload.uploadFailed')}: ${err.message}`,
+          key: 'walrusUpload',
+          duration: 3
+        });
+      }
+
       onError?.(err);
       // 重置上传状态
       setUploadStage('idle');

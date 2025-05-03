@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Radio, Alert, Typography, message, Spin } from 'antd';
+import { Form, Input, Button, Radio, Alert, Typography, message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { BillboardNFT } from '../../types';
 import { walrusService } from '../../utils/walrus';
 import MediaContent from './MediaContent';
@@ -9,6 +9,7 @@ import WalrusUpload from '../walrus/WalrusUpload';
 import './UpdateAdContent.scss';
 import { formatSuiAmount } from '../../utils/contract';
 import { getWalCoinType } from '../../config/walrusConfig';
+import { useWalletTransaction } from '../../hooks/useWalletTransaction';
 
 const { Title, Text } = Typography;
 
@@ -22,7 +23,7 @@ const UpdateAdContent: React.FC<UpdateAdContentProps> = ({ nft, onSuccess, onCan
   const { t } = useTranslation();
   const account = useCurrentAccount();
   const suiClient = useSuiClient();
-  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+  const { executeTransaction } = useWalletTransaction();
 
   // 添加钱包余额相关状态
   const [walletBalance, setWalletBalance] = useState<string>('0');
@@ -185,25 +186,21 @@ const UpdateAdContent: React.FC<UpdateAdContentProps> = ({ nft, onSuccess, onCan
               transactionBlock.setSender(account.address);
             }
 
-            const response = await new Promise((resolve, reject) => {
-              signAndExecute(
-                {
-                  transaction: transactionBlock,
-                  chain: chainId,
-                  account: account
-                },
-                {
-                  onSuccess: (data) => {
-                    console.log('交易签名成功:', data);
-                    resolve(data);
-                  },
-                  onError: (error) => {
-                    console.error('交易签名失败:', error);
-                    reject(error);
-                  }
-                }
-              );
+            // 使用新的executeTransaction函数
+            const { success, result } = await executeTransaction(transactionBlock, {
+              loadingMessage: t('walrusUpload.progress.signing'),
+              successMessage: t('walrusUpload.progress.signSuccess'),
+              loadingKey: 'signTransaction',
+              successKey: 'signTransaction',
+              userRejectedMessage: t('common.messages.userRejected')
             });
+
+            // 如果交易被用户拒绝或失败，直接返回
+            if (!success) {
+              throw new Error(t('common.messages.userRejected'));
+            }
+
+            const response = result;
 
             if (!response) {
               throw new Error('交易签名未返回结果');
@@ -237,25 +234,21 @@ const UpdateAdContent: React.FC<UpdateAdContentProps> = ({ nft, onSuccess, onCan
 
         // 使用 Promise 包装 signAndExecute 调用，确保它返回结果
         try {
-          const response = await new Promise((resolve, reject) => {
-            signAndExecute(
-              {
-                transaction: transactionToSign,
-                chain: chainId,
-                account: account
-              },
-              {
-                onSuccess: (data) => {
-                  console.log('交易签名成功:', data);
-                  resolve(data);
-                },
-                onError: (error) => {
-                  console.error('交易签名失败:', error);
-                  reject(error);
-                }
-              }
-            );
+          // 使用新的executeTransaction函数
+          const { success, result } = await executeTransaction(transactionToSign, {
+            loadingMessage: t('walrusUpload.progress.signing'),
+            successMessage: t('walrusUpload.progress.signSuccess'),
+            loadingKey: 'signTransaction',
+            successKey: 'signTransaction',
+            userRejectedMessage: t('common.messages.userRejected')
           });
+
+          // 如果交易被用户拒绝或失败，直接返回
+          if (!success) {
+            throw new Error(t('common.messages.userRejected'));
+          }
+
+          const response = result;
 
           if (!response) {
             throw new Error('交易签名未返回结果');
@@ -282,6 +275,16 @@ const UpdateAdContent: React.FC<UpdateAdContentProps> = ({ nft, onSuccess, onCan
   const deleteOriginalWalrusContent = async () => {
     if (nft.storageSource === 'walrus' && nft.blobId) {
       try {
+        // 先显示提示，告知用户这是可选操作
+        message.info({
+          content: t('walrusUpload.deleteWalrus.notice'),
+          key: 'deleteWalrusNotice',
+          duration: 3
+        });
+
+        // 等待用户阅读提示
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
         message.loading({
           content: t('walrusUpload.deleteWalrus.deleting'),
           key: 'deleteWalrus',
@@ -300,11 +303,31 @@ const UpdateAdContent: React.FC<UpdateAdContentProps> = ({ nft, onSuccess, onCan
         console.log('原Walrus内容已删除');
       } catch (error) {
         console.error('删除原Walrus内容失败:', error);
-        message.error({
-          content: t('walrusUpload.deleteWalrus.error'),
-          key: 'deleteWalrus',
-          duration: 3
-        });
+
+        // 检查是否是用户拒绝交易
+        const err = error instanceof Error ? error : new Error(String(error));
+        if (err.message && (
+          err.message.includes('User rejected') ||
+          err.message.includes('User cancelled') ||
+          err.message.includes('User denied') ||
+          err.message.includes('用户拒绝') ||
+          err.message.includes('用户取消') ||
+          err.message.includes(t('common.messages.userRejected'))
+        )) {
+          // 用户拒绝交易，显示友好提示
+          message.info({
+            content: t('walrusUpload.deleteWalrus.userRejected'),
+            key: 'deleteWalrus',
+            duration: 3
+          });
+        } else {
+          // 其他错误
+          message.error({
+            content: t('walrusUpload.deleteWalrus.error'),
+            key: 'deleteWalrus',
+            duration: 3
+          });
+        }
         // 不阻止更新流程，只记录错误
       }
     }
@@ -350,17 +373,20 @@ const UpdateAdContent: React.FC<UpdateAdContentProps> = ({ nft, onSuccess, onCan
       const txb = createUpdateAdContentTx(updateParams);
 
       // 执行交易
-      await signAndExecute({
-        transaction: txb
+      const { success } = await executeTransaction(txb, {
+        loadingMessage: t('walrusUpload.transaction.updating'),
+        successMessage: t('walrusUpload.transaction.submitted'),
+        loadingKey: 'updateContent',
+        successKey: 'updateContent',
+        userRejectedMessage: t('common.messages.userRejected')
       });
 
-      // 交易已提交，显示提交成功消息
-      message.success({
-        content: t('walrusUpload.transaction.submitted'),
-        key: 'updateContent',
-        duration: 2
-      });
+      // 如果交易被用户拒绝或失败，直接返回
+      if (!success) {
+        return;
+      }
 
+      // 交易已提交，显示等待确认消息
       message.loading({
         content: t('walrusUpload.transaction.waiting'),
         key: 'confirmUpdate',
@@ -370,9 +396,9 @@ const UpdateAdContent: React.FC<UpdateAdContentProps> = ({ nft, onSuccess, onCan
       // 使用轮询方式检查交易结果，最多尝试5次
       let attempts = 0;
       const maxAttempts = 5;
-      let success = false;
+      let confirmSuccess = false;
 
-      while (attempts < maxAttempts && !success) {
+      while (attempts < maxAttempts && !confirmSuccess) {
         attempts++;
         // 增加等待时间
         const delay = 2000 * attempts;
@@ -388,7 +414,7 @@ const UpdateAdContent: React.FC<UpdateAdContentProps> = ({ nft, onSuccess, onCan
 
           // 检查内容是否已更新
           if (updatedNft && updatedNft.contentUrl === updateParams.contentUrl) {
-            success = true;
+            confirmSuccess = true;
             console.log('成功确认广告内容更新');
 
             // 如果原内容是Walrus存储，需要删除原Walrus内容
@@ -425,7 +451,7 @@ const UpdateAdContent: React.FC<UpdateAdContentProps> = ({ nft, onSuccess, onCan
       }
 
       // 如果无法确认成功，但交易已提交，仍视为部分成功
-      if (!success) {
+      if (!confirmSuccess) {
         message.info({
           content: t('walrusUpload.transaction.partialSuccess'),
           key: 'confirmUpdate',

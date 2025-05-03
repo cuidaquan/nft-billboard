@@ -15,6 +15,7 @@ import { BillboardNFT, RenewNFTParams } from '../types';
 import { getNFTDetails, calculateLeasePrice, formatSuiAmount, createRenewLeaseTx } from '../utils/contract';
 import { truncateAddress, formatLeasePeriod } from '../utils/format';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
+import { useWalletTransaction } from '../hooks/useWalletTransaction';
 import { getWalCoinType } from '../config/walrusConfig';
 import './NFTDetail.scss';
 import { Link } from 'react-router-dom';
@@ -37,6 +38,7 @@ const NFTDetailPage: React.FC = () => {
   const account = useCurrentAccount();
   const suiClient = useSuiClient();
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+  const { executeTransaction } = useWalletTransaction();
 
   // 模态框状态
   const [updateContentVisible, setUpdateContentVisible] = useState<boolean>(false);
@@ -331,18 +333,20 @@ const NFTDetailPage: React.FC = () => {
 
       // 执行交易
       try {
-        await signAndExecute({
-          transaction: txb
+        const { success } = await executeTransaction(txb, {
+          loadingMessage: t('nftDetail.transaction.renewingNft'),
+          successMessage: t('nftDetail.transaction.renewSubmitted'),
+          loadingKey: 'renewNft',
+          successKey: 'renewNft',
+          userRejectedMessage: t('nftDetail.transaction.renewFailedUserCancelled')
         });
+
+        // 如果交易被用户拒绝或失败，直接返回
+        if (!success) {
+          return;
+        }
 
         console.log('续租交易已提交');
-
-        // 交易已提交，显示提交成功消息
-        message.success({
-          content: t('nftDetail.transaction.renewSubmitted'),
-          key: 'renewNft',
-          duration: 2
-        });
 
         // 等待交易确认
         await waitForTransactionConfirmation(nft);
@@ -368,8 +372,6 @@ const NFTDetailPage: React.FC = () => {
           } else {
             errorMsg = `${t('nftDetail.transaction.renewFailedContractError')} (${err.message})`;
           }
-        } else if (err.message.includes('用户取消了交易')) {
-          errorMsg = t('nftDetail.transaction.renewFailedUserCancelled');
         } else {
           // 提取错误消息的关键部分
           errorMsg = `${t('nftDetail.transaction.renewFailed')}: ${err.message.slice(0, 100)}${err.message.length > 100 ? '...' : ''}`;
@@ -436,25 +438,21 @@ const NFTDetailPage: React.FC = () => {
                   transactionBlock.setSender(account.address);
                 }
 
-                const response = await new Promise((resolve, reject) => {
-                  signAndExecute(
-                    {
-                      transaction: transactionBlock,
-                      chain: chainId,
-                      account: account
-                    },
-                    {
-                      onSuccess: (data) => {
-                        console.log('交易签名成功:', data);
-                        resolve(data);
-                      },
-                      onError: (error) => {
-                        console.error('交易签名失败:', error);
-                        reject(error);
-                      }
-                    }
-                  );
+                // 使用新的executeTransaction函数
+                const { success, result } = await executeTransaction(transactionBlock, {
+                  loadingMessage: t('nftDetail.transaction.extendingWalrus'),
+                  successMessage: t('nftDetail.transaction.extendWalrusSuccess'),
+                  loadingKey: 'extendWalrus',
+                  successKey: 'extendWalrus',
+                  userRejectedMessage: t('common.messages.userRejected')
                 });
+
+                // 如果交易被用户拒绝或失败，直接返回
+                if (!success) {
+                  throw new Error(t('common.messages.userRejected'));
+                }
+
+                const response = result;
 
                 if (!response) {
                   throw new Error('交易签名未返回结果');

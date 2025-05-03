@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Typography, Tabs, Form, Input, Button, InputNumber, Select, message, Alert, Card, List, Empty, Modal, Popconfirm, Row, Col, Spin, Tooltip, Tag, Radio } from 'antd';
-import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { useTranslation } from 'react-i18next';
 import { CreateAdSpaceParams, UserRole, RegisterGameDevParams, RemoveGameDevParams, AdSpace, BillboardNFT } from '../types';
 import { createAdSpaceTx, registerGameDevTx, removeGameDevTx, getCreatedAdSpaces, updateAdSpacePriceTx, deleteAdSpaceTx, getAdSpaceById, getNFTDetails } from '../utils/contract';
 import { CONTRACT_CONFIG, NETWORKS, DEFAULT_NETWORK } from '../config/config';
+import { useWalletTransaction } from '../hooks/useWalletTransaction';
 import './Manage.scss';
 import { ReloadOutlined, PlusOutlined, AppstoreOutlined, DollarOutlined, DeleteOutlined, FormOutlined, UserAddOutlined, UserDeleteOutlined, TeamOutlined, ColumnWidthOutlined, LinkOutlined, SettingOutlined, BankOutlined } from '@ant-design/icons';
 import AdSpaceItem from '../components/adSpace/AdSpaceItem';
@@ -41,7 +42,7 @@ const ManagePage: React.FC = () => {
 
   const account = useCurrentAccount();
   const suiClient = useSuiClient();
-  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+  const { executeTransaction } = useWalletTransaction();
 
   // 获取适合当前网络的 explorer URL
   const getExplorerUrl = (type: 'address' | 'object', id: string): string => {
@@ -257,24 +258,32 @@ const ManagePage: React.FC = () => {
       message.loading({ content: t('manage.createAdSpace.loading'), key: 'createAdSpace', duration: 0 });
 
       // 执行交易
-      await signAndExecute({
-        transaction: txb
+      const { success: txSuccess } = await executeTransaction(txb, {
+        loadingMessage: t('manage.createAdSpace.loading'),
+        successMessage: t('manage.createAdSpace.form.txSubmitted'),
+        loadingKey: 'createAdSpace',
+        successKey: 'createAdSpace',
+        userRejectedMessage: t('common.messages.userRejected')
       });
+
+      // 如果交易被用户拒绝或失败，直接返回
+      if (!txSuccess) {
+        return;
+      }
 
       console.log('交易执行成功，已提交到区块链');
 
-      // 交易已提交，显示提交成功消息
-      message.success({ content: t('manage.createAdSpace.form.txSubmitted'), key: 'createAdSpace', duration: 2 });
+      // 交易已提交，显示等待确认消息
       message.loading({ content: t('manage.createAdSpace.form.waitingConfirmation'), key: 'confirmAdSpace', duration: 0 });
 
       // 使用轮询方式检查交易结果，最多尝试5次
       let attempts = 0;
       const maxAttempts = 5;
-      let success = false;
+      let confirmSuccess = false;
 
       console.log(`等待广告位数量增加，确认交易成功...`);
 
-      while (attempts < maxAttempts && !success) {
+      while (attempts < maxAttempts && !confirmSuccess) {
         attempts++;
         // 延迟时间随尝试次数增加
         const delay = 2000 * attempts;
@@ -299,7 +308,7 @@ const ManagePage: React.FC = () => {
 
           // 判断广告位数量是否增加
           if (newAdSpaceCount > currentAdSpaceCount) {
-            success = true;
+            confirmSuccess = true;
             console.log('广告位数量增加，创建成功');
 
             // 成功找到后，更新React状态，保存最新数据
@@ -329,7 +338,7 @@ const ManagePage: React.FC = () => {
       }
 
       // 如果多次尝试后仍未找到，显示提示信息
-      if (!success) {
+      if (!confirmSuccess) {
         message.info({
           content: t('manage.createAdSpace.form.delayedDisplay'),
           key: 'confirmAdSpace',
@@ -402,125 +411,109 @@ const ManagePage: React.FC = () => {
 
       const txb = registerGameDevTx(params);
 
-      // 显示交易执行中状态
-      message.loading({
-        content: t('manage.platformManage.registerDev.executing'),
-        key: 'registerDev',
-        duration: 0 // 不自动关闭
+      // 执行交易
+      const { success } = await executeTransaction(txb, {
+        loadingMessage: t('manage.platformManage.registerDev.executing'),
+        successMessage: t('manage.platformManage.registerDev.success'),
+        loadingKey: 'registerDev',
+        successKey: 'registerDev',
+        userRejectedMessage: t('manage.platformManage.registerDev.userRejected'),
+        onSuccess: async (result) => {
+          console.log('交易执行成功:', result);
+
+          // 重置表单
+          devRegisterForm.resetFields();
+
+          // 显示刷新状态
+          message.loading({
+            content: t('manage.platformManage.registerDev.refreshing'),
+            key: 'refreshDevs',
+            duration: 0 // 不自动关闭
+          });
+
+          try {
+            // 获取最新的开发者列表
+            const { getGameDevsFromFactory } = await import('../utils/contract');
+
+            // 尝试最多3次获取最新列表，每次间隔增加
+            let updatedDevs: string[] = [];
+            let attempts = 0;
+            const maxAttempts = 3;
+            let confirmSuccess = false;
+
+            while (attempts < maxAttempts && !confirmSuccess) {
+              attempts++;
+              // 等待时间随尝试次数增加
+              const delay = 2000 * attempts;
+              console.log(`等待开发者列表更新，尝试 ${attempts}/${maxAttempts}，等待 ${delay}ms...`);
+
+              // 等待一段时间再获取数据，确保链上数据已更新
+              await new Promise(resolve => setTimeout(resolve, delay));
+
+              try {
+                updatedDevs = await getGameDevsFromFactory(CONTRACT_CONFIG.FACTORY_OBJECT_ID);
+
+                // 检查新地址是否在列表中
+                if (updatedDevs.some(dev => dev.toLowerCase() === normalizedAddress)) {
+                  confirmSuccess = true;
+                  console.log(`成功获取更新的开发者列表，尝试次数: ${attempts}`);
+
+                  // 更新状态
+                  setRegisteredDevs(updatedDevs);
+
+                  // 显示成功消息
+                  message.success({
+                    content: t('manage.platformManage.registeredDevs.listUpdated'),
+                    key: 'refreshDevs',
+                    duration: 2
+                  });
+                } else {
+                  console.log(`开发者地址未出现在列表中，等待更长时间，尝试次数: ${attempts}`);
+                }
+              } catch (error) {
+                console.error(`尝试第 ${attempts} 次获取开发者列表失败:`, error);
+              }
+            }
+
+            if (!confirmSuccess) {
+              // 多次尝试后仍未获取到最新列表，不更新UI
+              console.warn('无法从区块链获取最新数据，不更新UI');
+              message.warning({
+                content: t('manage.platformManage.registeredDevs.updateUnconfirmed'),
+                key: 'refreshDevs',
+                duration: 3
+              });
+            }
+          } catch (fetchError) {
+            console.error('更新开发者列表失败:', fetchError);
+            // 交易已成功但获取列表失败，不更新UI
+            message.warning({
+              content: t('manage.platformManage.registeredDevs.updateUnconfirmed'),
+              key: 'refreshDevs',
+              duration: 3
+            });
+          }
+        },
+        onError: (error) => {
+          console.error('交易执行失败:', error);
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          setError(`交易执行失败: ${errorMsg}`);
+        }
       });
 
-      try {
-        // 执行交易并等待结果
-        const result = await signAndExecute({
-          transaction: txb
-        });
-
-        console.log('交易执行成功:', result);
-
-        // 重置表单
-        devRegisterForm.resetFields();
-
-        // 显示成功消息
-        message.success({
-          content: t('manage.platformManage.registerDev.success'),
-          key: 'registerDev',
-          duration: 2
-        });
-
-        // 显示刷新状态
-        message.loading({
-          content: t('manage.platformManage.registerDev.refreshing'),
-          key: 'refreshDevs',
-          duration: 0 // 不自动关闭
-        });
-
-        // 等待交易确认并更新开发者列表
-        try {
-          // 获取最新的开发者列表
-          const { getGameDevsFromFactory } = await import('../utils/contract');
-
-          // 尝试最多3次获取最新列表，每次间隔增加
-          let updatedDevs: string[] = [];
-          let attempts = 0;
-          const maxAttempts = 3;
-          let success = false;
-
-          while (attempts < maxAttempts && !success) {
-            attempts++;
-            // 等待时间随尝试次数增加
-            const delay = 2000 * attempts;
-
-            // 等待一段时间再获取数据，确保链上数据已更新
-            await new Promise(resolve => setTimeout(resolve, delay));
-
-            try {
-              updatedDevs = await getGameDevsFromFactory(CONTRACT_CONFIG.FACTORY_OBJECT_ID);
-
-              // 检查新地址是否在列表中
-              if (updatedDevs.some(dev => dev.toLowerCase() === normalizedAddress)) {
-                success = true;
-                console.log(`成功获取更新的开发者列表，尝试次数: ${attempts}`);
-              } else {
-                console.log(`开发者地址未出现在列表中，等待更长时间，尝试次数: ${attempts}`);
-              }
-            } catch (error) {
-              console.error(`尝试第 ${attempts} 次获取开发者列表失败:`, error);
-            }
-          }
-
-          if (success) {
-            // 成功获取到包含新开发者的列表
-            setRegisteredDevs(updatedDevs);
-            message.success({
-              content: t('manage.platformManage.registeredDevs.listUpdated'),
-              key: 'refreshDevs',
-              duration: 2
-            });
-          } else {
-            // 多次尝试后仍未获取到最新列表，手动更新UI
-            console.warn('无法从区块链获取最新数据，手动更新UI');
-            setRegisteredDevs(prevDevs => {
-              // 检查是否已存在，避免重复添加
-              if (!prevDevs.some(dev => dev.toLowerCase() === normalizedAddress)) {
-                return [...prevDevs, normalizedAddress];
-              }
-              return prevDevs;
-            });
-            message.info({
-              content: t('manage.platformManage.registeredDevs.manuallyAdded'),
-              key: 'refreshDevs',
-              duration: 2
-            });
-          }
-        } catch (fetchError) {
-          console.error('更新开发者列表失败:', fetchError);
-          // 交易已成功但获取列表失败，手动更新UI
-          setRegisteredDevs(prevDevs => {
-            if (!prevDevs.some(dev => dev.toLowerCase() === normalizedAddress)) {
-              return [...prevDevs, normalizedAddress];
-            }
-            return prevDevs;
-          });
-          message.warning({
-            content: '无法从合约获取最新列表，已手动更新',
-            key: 'refreshDevs',
-            duration: 2
-          });
-        }
-      } catch (txError) {
-        console.error('交易执行失败:', txError);
-        const errorMsg = txError instanceof Error ? txError.message : String(txError);
-        setError(`交易执行失败: ${errorMsg}`);
-        message.error({
-          content: '游戏开发者注册失败',
-          key: 'registerDev',
-          duration: 2
-        });
+      if (!success) {
+        // 交易失败，但用户拒绝的情况已在executeTransaction中处理
+        return;
       }
     } catch (err) {
       console.error('注册游戏开发者失败:', err);
       const errorMsg = err instanceof Error ? err.message : String(err);
       setError(`注册游戏开发者失败: ${errorMsg}`);
+      message.error({
+        content: '游戏开发者注册失败',
+        key: 'registerDev',
+        duration: 2
+      });
     } finally {
       setLoading(false);
     }
@@ -548,116 +541,109 @@ const ManagePage: React.FC = () => {
         developer: normalizedAddress
       };
 
-      // 显示交易执行中状态
-      message.loading({
-        content: t('manage.platformManage.registeredDevs.removing'),
-        key: 'removeDev',
-        duration: 0 // 不自动关闭
+      // 创建交易
+      const txb = removeGameDevTx(params);
+
+      // 执行交易
+      const { success } = await executeTransaction(txb, {
+        loadingMessage: t('manage.platformManage.registeredDevs.removing'),
+        successMessage: t('manage.platformManage.registeredDevs.removeSuccess'),
+        loadingKey: 'removeDev',
+        successKey: 'removeDev',
+        userRejectedMessage: t('manage.platformManage.registeredDevs.userRejected'),
+        onSuccess: async (result) => {
+          console.log('移除开发者交易执行成功:', result);
+
+          // 显示刷新状态
+          message.loading({
+            content: t('manage.platformManage.registeredDevs.refreshing'),
+            key: 'refreshDevs',
+            duration: 0 // 不自动关闭
+          });
+
+          try {
+            // 获取最新的开发者列表
+            const { getGameDevsFromFactory } = await import('../utils/contract');
+
+            // 尝试最多3次获取最新列表，每次间隔增加
+            let updatedDevs: string[] = [];
+            let attempts = 0;
+            const maxAttempts = 3;
+            let confirmSuccess = false;
+
+            while (attempts < maxAttempts && !confirmSuccess) {
+              attempts++;
+              // 等待时间随尝试次数增加
+              const delay = 2000 * attempts;
+              console.log(`等待开发者列表更新，尝试 ${attempts}/${maxAttempts}，等待 ${delay}ms...`);
+
+              // 等待一段时间再获取数据，确保链上数据已更新
+              await new Promise(resolve => setTimeout(resolve, delay));
+
+              try {
+                updatedDevs = await getGameDevsFromFactory(CONTRACT_CONFIG.FACTORY_OBJECT_ID);
+
+                // 检查开发者地址是否已从列表中移除
+                if (!updatedDevs.some(dev => dev.toLowerCase() === normalizedAddress)) {
+                  confirmSuccess = true;
+                  console.log(`成功获取更新的开发者列表，已确认开发者被移除，尝试次数: ${attempts}`);
+
+                  // 更新状态
+                  setRegisteredDevs(updatedDevs);
+
+                  // 显示成功消息
+                  message.success({
+                    content: t('manage.platformManage.registeredDevs.listUpdated'),
+                    key: 'refreshDevs',
+                    duration: 2
+                  });
+                } else {
+                  console.log(`开发者地址仍在列表中，等待更长时间，尝试次数: ${attempts}`);
+                }
+              } catch (error) {
+                console.error(`尝试第 ${attempts} 次获取开发者列表失败:`, error);
+              }
+            }
+
+            if (!confirmSuccess) {
+              // 多次尝试后仍未获取到最新列表，不更新UI
+              console.warn('无法从区块链获取最新数据，不更新UI');
+              message.warning({
+                content: t('manage.platformManage.registeredDevs.updateUnconfirmed'),
+                key: 'refreshDevs',
+                duration: 3
+              });
+            }
+          } catch (fetchError) {
+            console.error('更新开发者列表失败:', fetchError);
+            // 交易已成功但获取列表失败，不更新UI
+            message.warning({
+              content: t('manage.platformManage.registeredDevs.updateUnconfirmed'),
+              key: 'refreshDevs',
+              duration: 3
+            });
+          }
+        },
+        onError: (error) => {
+          console.error('移除开发者交易执行失败:', error);
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          setError(`${t('manage.platformManage.registeredDevs.removeFailed')}: ${errorMsg}`);
+        }
       });
 
-      try {
-        // 执行交易并等待结果
-        const txb = removeGameDevTx(params);
-        const result = await signAndExecute({
-          transaction: txb
-        });
-
-        console.log('移除开发者交易执行成功:', result);
-
-        // 显示成功消息
-        message.success({
-          content: t('manage.platformManage.registeredDevs.removeSuccess'),
-          key: 'removeDev',
-          duration: 2
-        });
-
-        // 显示刷新状态
-        message.loading({
-          content: t('manage.platformManage.registeredDevs.refreshing'),
-          key: 'refreshDevs',
-          duration: 0 // 不自动关闭
-        });
-
-        // 等待交易确认并更新开发者列表
-        try {
-          // 获取最新的开发者列表
-          const { getGameDevsFromFactory } = await import('../utils/contract');
-
-          // 尝试最多3次获取最新列表，每次间隔增加
-          let updatedDevs: string[] = [];
-          let attempts = 0;
-          const maxAttempts = 3;
-          let success = false;
-
-          while (attempts < maxAttempts && !success) {
-            attempts++;
-            // 等待时间随尝试次数增加
-            const delay = 2000 * attempts;
-
-            // 等待一段时间再获取数据，确保链上数据已更新
-            await new Promise(resolve => setTimeout(resolve, delay));
-
-            try {
-              updatedDevs = await getGameDevsFromFactory(CONTRACT_CONFIG.FACTORY_OBJECT_ID);
-
-              // 检查开发者地址是否已从列表中移除
-              if (!updatedDevs.some(dev => dev.toLowerCase() === normalizedAddress)) {
-                success = true;
-                console.log(`成功获取更新的开发者列表，已确认开发者被移除，尝试次数: ${attempts}`);
-              } else {
-                console.log(`开发者地址仍在列表中，等待更长时间，尝试次数: ${attempts}`);
-              }
-            } catch (error) {
-              console.error(`尝试第 ${attempts} 次获取开发者列表失败:`, error);
-            }
-          }
-
-          if (success) {
-            // 成功获取到已移除开发者的列表
-            setRegisteredDevs(updatedDevs);
-            message.success({
-              content: t('manage.platformManage.registeredDevs.listUpdated'),
-              key: 'refreshDevs',
-              duration: 2
-            });
-          } else {
-            // 多次尝试后仍未获取到最新列表，手动更新UI
-            console.warn('无法从区块链获取最新数据，手动更新UI');
-            setRegisteredDevs(prevDevs =>
-              prevDevs.filter(dev => dev.toLowerCase() !== normalizedAddress)
-            );
-            message.info({
-              content: t('manage.platformManage.registeredDevs.manuallyRemoved'),
-              key: 'refreshDevs',
-              duration: 2
-            });
-          }
-        } catch (fetchError) {
-          console.error('更新开发者列表失败:', fetchError);
-          // 交易已成功但获取列表失败，手动更新UI
-          setRegisteredDevs(prevDevs =>
-            prevDevs.filter(dev => dev.toLowerCase() !== normalizedAddress)
-          );
-          message.warning({
-            content: t('manage.platformManage.registeredDevs.manuallyUpdated'),
-            key: 'refreshDevs',
-            duration: 2
-          });
-        }
-      } catch (txError) {
-        console.error('移除开发者交易执行失败:', txError);
-        const errorMsg = txError instanceof Error ? txError.message : String(txError);
-        setError(`${t('manage.platformManage.registeredDevs.removeFailed')}: ${errorMsg}`);
-        message.error({
-          content: t('manage.platformManage.registeredDevs.removeFailed'),
-          key: 'removeDev',
-          duration: 2
-        });
+      if (!success) {
+        // 交易失败，但用户拒绝的情况已在executeTransaction中处理
+        return;
       }
     } catch (err) {
       console.error('移除游戏开发者失败:', err);
       const errorMsg = err instanceof Error ? err.message : String(err);
       setError(`${t('manage.platformManage.registeredDevs.removeFailed')}: ${errorMsg}`);
+      message.error({
+        content: t('manage.platformManage.registeredDevs.removeFailed'),
+        key: 'removeDev',
+        duration: 2
+      });
     } finally {
       setLoading(false);
     }
@@ -695,12 +681,21 @@ const ManagePage: React.FC = () => {
       message.loading({ content: t('manage.buttons.updatePrice'), key: 'updatePrice', duration: 0 });
 
       // 执行交易
-      await signAndExecute({
-        transaction: txb
+      const { success: txSuccess } = await executeTransaction(txb, {
+        loadingMessage: t('manage.buttons.updatePrice'),
+        successMessage: t('manage.priceModal.priceUpdateSuccess'),
+        loadingKey: 'updatePrice',
+        successKey: 'updatePrice',
+        userRejectedMessage: t('common.messages.userRejected')
       });
 
+      // 如果交易被用户拒绝或失败，直接返回
+      if (!txSuccess) {
+        return;
+      }
+
       // 交易已提交
-      message.loading({ content: '交易已提交，等待确认...', key: 'updatePrice', duration: 0 });
+      message.loading({ content: t('manage.buttons.waitingConfirmation'), key: 'updatePrice', duration: 0 });
 
       // 使用轮询方式检查交易结果，最多尝试5次
       let attempts = 0;
@@ -773,9 +768,18 @@ const ManagePage: React.FC = () => {
       message.loading({ content: t('manage.buttons.deleteAdSpace'), key: 'deleteAdSpace', duration: 0 });
 
       // 执行交易
-      await signAndExecute({
-        transaction: txb
+      const { success: txSuccess } = await executeTransaction(txb, {
+        loadingMessage: t('manage.buttons.deleteAdSpace'),
+        successMessage: t('manage.buttons.deleteSuccess'),
+        loadingKey: 'deleteAdSpace',
+        successKey: 'deleteAdSpace',
+        userRejectedMessage: t('common.messages.userRejected')
       });
+
+      // 如果交易被用户拒绝或失败，直接返回
+      if (!txSuccess) {
+        return;
+      }
 
       // 交易已提交
       message.loading({ content: t('manage.buttons.waitingConfirmation'), key: 'deleteAdSpace', duration: 0 });
@@ -964,48 +968,99 @@ const ManagePage: React.FC = () => {
         ratio
       };
 
-      // 显示交易执行中状态
-      message.loading({
-        content: t('manage.platformManage.platformRatio.updating'),
-        key: 'updateRatio',
-        duration: 0 // 不自动关闭
+      // 导入更新平台分成比例的函数
+      const { updatePlatformRatioTx, getPlatformRatio } = await import('../utils/contract');
+      // 创建交易
+      const txb = updatePlatformRatioTx(params);
+
+      // 执行交易
+      const { success } = await executeTransaction(txb, {
+        loadingMessage: t('manage.platformManage.platformRatio.updating'),
+        successMessage: t('manage.platformManage.platformRatio.updateSuccess'),
+        loadingKey: 'updateRatio',
+        successKey: 'updateRatio',
+        userRejectedMessage: t('manage.platformManage.platformRatio.userRejected'),
+        onSuccess: async (result) => {
+          console.log('更新平台分成比例交易已提交:', result);
+
+          // 显示交易已提交消息
+          message.loading({
+            content: t('manage.platformManage.platformRatio.waitingConfirmation'),
+            key: 'updateRatio',
+            duration: 0 // 不自动关闭
+          });
+
+          // 使用轮询方式检查交易结果，最多尝试3次
+          let attempts = 0;
+          const maxAttempts = 3;
+          let confirmSuccess = false;
+
+          while (attempts < maxAttempts && !confirmSuccess) {
+            attempts++;
+            // 等待时间随尝试次数增加
+            const delay = 2000 * attempts;
+            console.log(`等待平台分成比例更新确认，尝试 ${attempts}/${maxAttempts}，等待 ${delay}ms...`);
+
+            // 等待一段时间再获取数据，确保链上数据已更新
+            await new Promise(resolve => setTimeout(resolve, delay));
+
+            try {
+              // 从区块链获取最新的平台分成比例
+              const updatedRatio = await getPlatformRatio(CONTRACT_CONFIG.FACTORY_OBJECT_ID);
+              console.log('获取到的最新平台分成比例:', updatedRatio);
+
+              // 检查比例是否已更新
+              if (updatedRatio === ratio) {
+                confirmSuccess = true;
+                console.log('平台分成比例更新已确认');
+
+                // 更新状态
+                setCurrentPlatformRatio(updatedRatio);
+
+                // 显示成功消息
+                message.success({
+                  content: t('manage.platformManage.platformRatio.updateSuccess'),
+                  key: 'updateRatio',
+                  duration: 2
+                });
+              } else {
+                console.log(`平台分成比例尚未更新，当前值: ${updatedRatio}，期望值: ${ratio}`);
+              }
+            } catch (error) {
+              console.error(`尝试第 ${attempts} 次获取平台分成比例失败:`, error);
+            }
+          }
+
+          // 如果多次尝试后仍未确认更新，显示提示但不更新UI
+          if (!confirmSuccess) {
+            console.warn('无法从区块链确认平台分成比例更新，不更新UI');
+            message.warning({
+              content: t('manage.platformManage.platformRatio.updateUnconfirmed'),
+              key: 'updateRatio',
+              duration: 3
+            });
+          }
+        },
+        onError: (error) => {
+          console.error('更新平台分成比例交易执行失败:', error);
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          setError(`${t('manage.platformManage.platformRatio.updateFailed')}: ${errorMsg}`);
+        }
       });
 
-      try {
-        // 导入更新平台分成比例的函数
-        const { updatePlatformRatioTx } = await import('../utils/contract');
-        // 创建交易
-        const txb = updatePlatformRatioTx(params);
-        // 执行交易
-        const result = await signAndExecute({
-          transaction: txb
-        });
-
-        console.log('更新平台分成比例交易执行成功:', result);
-
-        // 显示成功消息
-        message.success({
-          content: t('manage.platformManage.platformRatio.updateSuccess'),
-          key: 'updateRatio',
-          duration: 2
-        });
-
-        // 更新状态
-        setCurrentPlatformRatio(ratio);
-      } catch (txError) {
-        console.error('更新平台分成比例交易执行失败:', txError);
-        const errorMsg = txError instanceof Error ? txError.message : String(txError);
-        setError(`${t('manage.platformManage.platformRatio.updateFailed')}: ${errorMsg}`);
-        message.error({
-          content: t('manage.platformManage.platformRatio.updateFailed'),
-          key: 'updateRatio',
-          duration: 2
-        });
+      if (!success) {
+        // 交易失败，但用户拒绝的情况已在executeTransaction中处理
+        return;
       }
     } catch (err) {
       console.error('更新平台分成比例失败:', err);
       const errorMsg = err instanceof Error ? err.message : String(err);
       setError(`${t('manage.platformManage.platformRatio.updateFailed')}: ${errorMsg}`);
+      message.error({
+        content: t('manage.platformManage.platformRatio.updateFailed'),
+        key: 'updateRatio',
+        duration: 2
+      });
     } finally {
       setPlatformRatioLoading(false);
     }

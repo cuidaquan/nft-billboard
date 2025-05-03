@@ -429,7 +429,11 @@
         "updateButton": "更新分成比例",
         "updateSuccess": "平台分成比例更新成功！",
         "updateFailed": "平台分成比例更新失败",
-        "updating": "正在更新平台分成比例..."
+        "updating": "正在更新平台分成比例...",
+        "waitingConfirmation": "等待交易确认...",
+        "manuallyUpdated": "无法从区块链确认更新，已手动更新UI",
+        "updateUnconfirmed": "交易已提交，但无法确认更新结果。请稍后刷新页面查看最新数据。",
+        "userRejected": "您已取消交易"
       },
       "registerDev": {
         "title": "注册游戏开发者",
@@ -440,7 +444,8 @@
         "alreadyRegistered": "该地址已经注册为游戏开发者",
         "executing": "正在执行交易...",
         "success": "游戏开发者注册成功！",
-        "refreshing": "正在刷新开发者列表..."
+        "refreshing": "正在刷新开发者列表...",
+        "userRejected": "您已取消交易"
       },
       "registeredDevs": {
         "title": "已注册的游戏开发者",
@@ -457,7 +462,9 @@
         "manuallyRemoved": "已手动从列表中移除开发者",
         "manuallyUpdated": "无法从合约获取最新列表，已手动更新",
         "removeFailed": "游戏开发者移除失败",
-        "manuallyAdded": "已手动添加开发者到列表"
+        "manuallyAdded": "已手动添加开发者到列表",
+        "updateUnconfirmed": "交易已提交，但无法确认更新结果。请稍后刷新页面查看最新数据。",
+        "userRejected": "您已取消交易"
       }
     },
     "manageDev": {
@@ -481,6 +488,8 @@
       "fileTooLarge": "文件大小超过限制，最大允许10MB，当前文件大小{{size}}MB",
       "connectWalletError": "请先连接钱包",
       "uploadSuccess": "文件上传成功",
+      "uploadFailed": "文件上传失败",
+      "blobUploadFailed": "Blob上传失败",
       "ratioGuidance": "请使用符合{{ratio}}比例的图片或视频以获得最佳显示效果",
       "noWalBalance": "您的WAL代币余额为0，无法上传到Walrus存储"
     },
@@ -489,9 +498,11 @@
     "externalUrlWarning": "您正在使用外部URL。请确保您提供的URL是可访问的，并且内容符合平台规定。",
     "noticeTitle": "注意",
     "deleteWalrus": {
+      "notice": "NFT内容已更新成功。现在将删除原Walrus内容以释放存储空间，您可以在钱包中确认或拒绝此操作，不会影响NFT内容更新",
       "deleting": "正在删除原Walrus内容...",
       "success": "原Walrus内容已删除",
-      "error": "删除原Walrus内容失败，但更新操作已完成"
+      "error": "删除原Walrus内容失败，但更新操作已完成",
+      "userRejected": "您已取消删除原Walrus内容，但NFT内容已成功更新"
     },
     "validation": {
       "invalidUrl": "请输入有效的URL",
@@ -509,6 +520,7 @@
       "uploading": "正在上传文件到Walrus存储网络...",
       "preparing": "准备上传文件...",
       "signing": "等待钱包签名交易...",
+      "signSuccess": "交易签名成功",
       "finalizing": "正在完成上传，生成访问链接...",
       "completed": "上传完成！",
       "signingHint": "请在钱包中确认交易，请勿关闭此页面"
@@ -575,7 +587,8 @@
       "invalidDate": "无效日期",
       "required": "此字段为必填项",
       "invalidAddress": "请输入有效的SUI地址",
-      "unknown": "未知"
+      "unknown": "未知",
+      "userRejected": "您已取消交易"
     }
   }
 }
