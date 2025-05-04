@@ -149,7 +149,9 @@
       "title": "您还没有拥有任何广告牌NFT",
       "subtitle": "浏览可用的广告位并获取您的第一个NFT",
       "browseButton": "浏览广告位",
-      "pending": "没有待展示的NFT"
+      "pending": "没有待展示的NFT",
+      "active": "没有活跃的NFT",
+      "expired": "没有过期的NFT"
     },
     "tabs": {
       "active": "活跃NFT",

@@ -149,7 +149,9 @@
       "title": "You don't own any billboard NFTs yet",
       "subtitle": "Browse available ad spaces and get your first NFT",
       "browseButton": "Browse Ad Spaces",
-      "pending": "No pending NFTs"
+      "pending": "No pending NFTs",
+      "active": "No active NFTs",
+      "expired": "No expired NFTs"
     },
     "tabs": {
       "active": "Active NFTs",

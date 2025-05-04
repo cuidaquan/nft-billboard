@@ -109,7 +109,7 @@ const MyNFTsPage: React.FC = () => {
         ),
         children: activeNfts.length === 0 ? (
           <Empty
-            description={`${t('myNFTs.tabs.active')}为空`}
+            description={t('myNFTs.empty.active')}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             className="empty-tab-content"
           />
@@ -153,7 +153,7 @@ const MyNFTsPage: React.FC = () => {
         ),
         children: expiredNfts.length === 0 ? (
           <Empty
-            description={`${t('myNFTs.tabs.expired')}为空`}
+            description={t('myNFTs.empty.expired')}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             className="empty-tab-content"
           />
