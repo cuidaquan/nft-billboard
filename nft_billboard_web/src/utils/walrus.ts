@@ -2,7 +2,7 @@ import { WalrusClient } from '@mysten/walrus';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import type { WriteBlobOptions, ExtendBlobOptions } from '@mysten/walrus';
 import type { Signer } from '@mysten/sui/cryptography';
-import { WALRUS_CONFIG, getWalrusAggregatorUrl } from '../config/walrusConfig';
+import { WALRUS_CONFIG, getWalrusAggregatorUrl, getEpochDuration } from '../config/walrusConfig';
 
 /**
  * 自定义签名器接口，兼容性更强
@@ -114,10 +114,16 @@ export class WalrusService {
       const buffer = await file.arrayBuffer();
       const uint8Array = new Uint8Array(buffer);
 
-      // 计算存储时长（转换为epoch数，1个epoch约24小时）
-      const epochs = Math.ceil(duration / (24 * 60 * 60));
+      // 获取当前环境的epoch时长
+      const epochDuration = getEpochDuration();
+      const epochDurationDays = epochDuration / (24 * 60 * 60);
+
+      // 计算存储时长（转换为epoch数）
+      const epochs = Math.ceil(duration / epochDuration);
       const durationDays = duration / (24 * 60 * 60);
-      console.log(`文件将存储 ${epochs} 个epochs（约${epochs}天），原始时长: ${durationDays.toFixed(2)}天 (${duration}秒)`);
+
+      console.log(`当前环境: ${WALRUS_CONFIG.ENVIRONMENT}, Epoch时长: ${epochDurationDays}天`);
+      console.log(`文件将存储 ${epochs} 个epochs（总计约${(epochs * epochDurationDays).toFixed(2)}天），原始时长: ${durationDays.toFixed(2)}天 (${duration}秒)`);
 
       // 如果存储时长超过租赁天数，记录额外的存储时间
       if (leaseDays !== undefined && durationDays > leaseDays) {
@@ -353,56 +359,50 @@ export class WalrusService {
   /**
    * 延长Walrus存储期限
    *
-   * 根据Walrus SDK文档，支持两种方式延长存储期限：
-   * 1. 通过指定epochs参数，增加存储的epoch数量
-   * 2. 通过指定endEpoch参数，直接设置存储的结束epoch
-   *
-   * 内部使用ExtendBlobOptions类型构造参数：
-   * ```typescript
-   * type ExtendBlobOptions = {
-   *   blobObjectId: string;
-   *   owner: string;
-   *   walCoin?: TransactionObjectArgument;
-   * } & (
-   *   | { endEpoch?: never; epochs: number }
-   *   | { endEpoch: number; epochs?: never }
-   * )
-   * ```
-   *
-   * 注意：ExtendBlobOptions类型要求必须提供epochs或endEpoch其中之一，但不能同时提供两者。
-   *
    * 参考文档：
    * - https://sdk.mystenlabs.com/typedoc/classes/_mysten_walrus.WalrusClient.html#executeextendblobtransaction
    * - https://sdk.mystenlabs.com/typedoc/types/_mysten_walrus.ExtendBlobOptions.html
    *
-   * @param contentUrl 内容URL或blobId
-   * @param duration 延长的存储时长(秒)，仅在使用epochs模式时有效
+   * @param contentUrl 内容URL或Sui对象ID
+   * @param duration 延长的存储时长(秒)
    * @param signer 签名对象
-   * @param options 可选参数，包括：
-   *   - endEpoch: 直接指定结束的epoch，如果提供此参数，将忽略duration
-   *   - useEndEpoch: 是否使用endEpoch模式而非epochs模式
+   * @param nftEndTime NFT的结束时间（秒，Unix时间戳），用于判断是否需要延长Walrus存储
    * @returns Promise<boolean> 操作成功返回true，失败抛出异常
    */
   async extendStorageDuration(
     contentUrl: string,
     duration: number,
     signer: Signer | CustomSigner,
-    options?: {
-      endEpoch?: number;
-      useEndEpoch?: boolean;
-    }
+    nftEndTime: number
   ): Promise<boolean> {
     try {
-      console.log(`正在延长Walrus存储期限，URL/ID: ${contentUrl}, 延长时间: ${duration}秒`);
+      console.log(`正在延长Walrus存储期限，URL/ID: ${contentUrl}, 延长时间: ${duration}秒, NFT结束时间: ${nftEndTime} (${new Date(nftEndTime * 1000).toLocaleString()})`);
 
       // 从URL中提取对象ID
-      const blobObjectId = this.extractObjectIdFromUrl(contentUrl);
+      const objectId = this.extractObjectIdFromUrl(contentUrl);
 
-      if (!blobObjectId) {
+      if (!objectId) {
         throw new Error(`无法从URL [${contentUrl}] 中提取有效的对象ID`);
       }
 
-      console.log(`成功提取对象ID: ${blobObjectId}`);
+      console.log(`成功提取对象ID: ${objectId}`);
+
+
+        // 检查是否需要延长存储期限
+        try {
+          // 使用传入的nftEndTime参数
+          const { needExtend, currentEndEpoch, targetEndEpoch, epochsToAdd } =
+            await this.checkNeedExtendStorage(objectId, duration, nftEndTime);
+
+          if (!needExtend) {
+            console.log(`Blob存储期限已足够，无需延长。当前结束epoch: ${currentEndEpoch}, 目标结束epoch: ${targetEndEpoch}`);
+            return true; // 返回成功，因为已经满足要求
+          }
+
+          console.log(`将使用计算出的目标结束epoch: ${targetEndEpoch} (增加${epochsToAdd}个epochs)`);
+        } catch (checkError) {
+          console.warn('检查存储期限时出错，将使用默认方式延长:', checkError);
+        }
 
       // 准备交易参数
       const owner = signer.toSuiAddress();
@@ -410,41 +410,23 @@ export class WalrusService {
       // 根据options决定使用哪种模式构造ExtendBlobOptions参数
       let transactionParams: ExtendBlobOptions & { signer: any };
 
-      if (options?.useEndEpoch && options?.endEpoch !== undefined) {
-        // 使用endEpoch模式
-        const endEpoch = options.endEpoch;
-        console.log(`使用endEpoch模式延长存储期限，目标结束epoch: ${endEpoch}`);
 
-        // 构造使用endEpoch的参数
-        transactionParams = {
-          blobObjectId,
-          owner,
-          endEpoch,
-          signer: signer as any // 使用类型断言解决类型兼容性问题
-        };
-      } else {
         // 使用epochs模式（增加存储时间）
-        const epochs = Math.ceil(duration / (24 * 60 * 60));
+        // 使用getEpochDuration获取当前环境的epoch时长
+        const epochDuration = getEpochDuration();
+        const epochs = Math.ceil(duration / epochDuration);
         const durationDays = duration / (24 * 60 * 60);
-        console.log(`使用epochs模式延长存储期限，增加 ${epochs} 个epochs（约${epochs}天），原始时长: ${durationDays.toFixed(2)}天 (${duration}秒)`);
+        console.log(`使用epochs模式延长存储期限，增加 ${epochs} 个epochs（约${durationDays.toFixed(2)}天），原始时长: ${duration}秒`);
 
         // 构造使用epochs的参数
         transactionParams = {
-          blobObjectId,
+          blobObjectId: objectId,
           owner,
           epochs,
           signer: signer as any // 使用类型断言解决类型兼容性问题
         };
-      }
 
       try {
-        // 创建并执行延长存储期限的交易
-        console.log('准备执行延长存储期限交易，参数:', {
-          blobObjectId: transactionParams.blobObjectId,
-          owner: transactionParams.owner,
-          ...(transactionParams.epochs !== undefined ? { epochs: transactionParams.epochs } : {}),
-          ...(transactionParams.endEpoch !== undefined ? { endEpoch: transactionParams.endEpoch } : {})
-        });
 
         // 执行延长存储期限交易
         const result = await this.client.executeExtendBlobTransaction(transactionParams);
@@ -493,6 +475,217 @@ export class WalrusService {
     }
   }
 
+  /**
+   * 获取Walrus Blob的到期时间信息
+   * @param objectId Sui对象ID，指向Walrus存储对象
+   * @returns Promise<{currentEpoch: number, endEpoch: number, remainingEpochs: number}>
+   */
+  async getBlobExpirationInfo(objectId: string): Promise<{
+    currentEpoch: number,
+    endEpoch: number,
+    remainingEpochs: number
+  }> {
+    try {
+      console.log(`正在获取Blob到期信息，对象ID: ${objectId}`);
+
+      // 获取当前系统状态，包含当前epoch
+      let currentEpoch: number | undefined;
+      let endEpoch: number | undefined;
+
+      // 使用SuiClient.getObject获取blob状态
+      try {
+        // 获取当前系统状态
+        const systemState = await this.client.systemState();
+
+        // 详细打印systemState的结构，方便调试
+        console.log('===== systemState返回数据开始 =====');
+        console.log('systemState类型:', typeof systemState);
+        console.log('systemState instanceof Object:', systemState instanceof Object);
+        console.log('systemState.constructor.name:', systemState.constructor.name);
+        console.log('systemState完整数据:', JSON.stringify(systemState, null, 2));
+
+        // 打印systemState的所有顶级属性
+        console.log('systemState顶级属性:');
+        for (const key in systemState) {
+          console.log(`  ${key}:`, (systemState as any)[key]);
+        }
+
+        // 尝试打印可能包含epoch的路径
+        console.log('可能的epoch路径:');
+        console.log('  systemState.committee?.epoch:', systemState.committee?.epoch);
+        console.log('  systemState.epoch:', (systemState as any).epoch);
+        console.log('  systemState.current_epoch:', (systemState as any).current_epoch);
+        console.log('===== systemState返回数据结束 =====');
+
+        currentEpoch = systemState.committee?.epoch;
+        console.log(`当前Walrus epoch: ${currentEpoch}`);
+
+        // 获取blob对象
+        const response = await this.suiClient.getObject({
+          id: objectId,
+          options: { showContent: true }
+        });
+
+        if (response.data && response.data.content) {
+          // 详细打印response的结构，方便调试
+          console.log('===== getObject返回数据开始 =====');
+          console.log('response.data类型:', typeof response.data);
+          console.log('response.data instanceof Object:', response.data instanceof Object);
+          console.log('response.data.constructor.name:', response.data.constructor.name);
+          console.log('response.data完整数据:', JSON.stringify(response.data, null, 2));
+
+          // 打印response.data的所有顶级属性
+          console.log('response.data顶级属性:');
+          for (const key in response.data) {
+            console.log(`  ${key}:`, (response.data as any)[key]);
+          }
+
+          // 打印content的结构
+          const content = response.data.content as any;
+          console.log('content类型:', typeof content);
+          console.log('content顶级属性:');
+          for (const key in content) {
+            console.log(`  ${key}:`, content[key]);
+          }
+
+          // 尝试打印可能包含end_epoch的路径
+          console.log('可能的end_epoch路径:');
+          console.log('  content.fields?.storage?.fields?.end_epoch:', content.fields?.storage?.fields?.end_epoch);
+          console.log('  content.fields?.blob_id:', content.fields?.blob_id);
+          console.log('  content.fields?.registered_epoch:', content.fields?.registered_epoch);
+          console.log('===== getObject返回数据结束 =====');
+
+          // 根据日志输出，正确的路径是 content.fields.storage.fields.end_epoch
+          const blobContent = response.data.content as any;
+          endEpoch = blobContent.fields?.storage?.fields?.end_epoch;
+
+          console.log(`提取到的end_epoch: ${endEpoch}`);
+
+        }
+      } catch (error) {
+        console.error('获取Blob状态或系统状态失败:', error);
+        throw new Error('无法获取Blob状态或系统状态信息');
+      }
+
+      if (endEpoch === undefined) {
+        throw new Error(`无法获取Blob的到期信息: ${objectId}`);
+      }
+
+      if (currentEpoch === undefined) {
+        throw new Error('无法获取当前epoch信息');
+      }
+
+      // 计算剩余的epoch数
+      const remainingEpochs = Math.max(0, endEpoch - currentEpoch);
+
+      console.log(`Blob到期信息: 当前epoch=${currentEpoch}, 结束epoch=${endEpoch}, 剩余=${remainingEpochs}`);
+
+      return {
+        currentEpoch,
+        endEpoch,
+        remainingEpochs
+      };
+    } catch (error) {
+      console.error('获取Blob到期信息失败:', error);
+      throw new Error(`获取Blob到期信息失败: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * 检查是否需要延长Walrus存储期限
+   * @param objectId Sui对象ID，指向Walrus存储对象
+   * @param desiredDuration 期望的存储时长（秒）
+   * @param nftEndTime NFT的结束时间（秒，Unix时间戳）
+   * @returns Promise<{needExtend: boolean, currentEndEpoch: number, targetEndEpoch: number, epochsToAdd: number}>
+   */
+  async checkNeedExtendStorage(
+    objectId: string,
+    desiredDuration: number,
+    nftEndTime: number
+  ): Promise<{
+    needExtend: boolean,
+    currentEndEpoch: number,
+    targetEndEpoch: number,
+    epochsToAdd: number
+  }> {
+    try {
+      console.log(`检查是否需要延长存储期限，对象ID: ${objectId}, 期望延长时间: ${desiredDuration}秒`);
+
+      // 获取当前时间（秒）
+      const currentTime = Math.floor(Date.now() / 1000);
+      console.log(`当前时间: ${currentTime} (${new Date(currentTime * 1000).toLocaleString()})`);
+
+      // 记录NFT结束时间
+      console.log(`NFT结束时间: ${nftEndTime} (${new Date(nftEndTime * 1000).toLocaleString()})`);
+      console.log(`NFT剩余时间: ${nftEndTime - currentTime}秒 (${((nftEndTime - currentTime) / (24 * 60 * 60)).toFixed(2)}天)`);
+
+      // 计算NFT延长后的结束时间
+      const nftNewEndTime = nftEndTime + desiredDuration;
+      console.log(`NFT延长后的结束时间: ${nftNewEndTime} (${new Date(nftNewEndTime * 1000).toLocaleString()})`);
+
+      // 获取blob的到期信息
+      const { currentEpoch, endEpoch } = await this.getBlobExpirationInfo(objectId);
+      console.log(`当前epoch=${currentEpoch}, 当前结束epoch=${endEpoch}`);
+
+      // 获取当前环境的epoch时长
+      const epochDuration = getEpochDuration();
+      console.log(`当前环境的epoch时长: ${epochDuration}秒`);
+
+      // 计算Walrus存储剩余时间（秒）
+      const walrusRemainingEpochs = endEpoch - currentEpoch;
+      const walrusRemainingSeconds = walrusRemainingEpochs * epochDuration;
+      console.log(`Walrus存储剩余时间: ${walrusRemainingEpochs}个epochs (${walrusRemainingSeconds}秒, ${(walrusRemainingSeconds / (24 * 60 * 60)).toFixed(2)}天)`);
+
+      // 计算Walrus存储延长后的剩余时间（秒）
+      const walrusNewRemainingSeconds = walrusRemainingSeconds + desiredDuration;
+      console.log(`Walrus存储延长后的剩余时间: ${walrusNewRemainingSeconds}秒 (${(walrusNewRemainingSeconds / (24 * 60 * 60)).toFixed(2)}天)`);
+
+      // 判断是否需要延长Walrus存储
+      let needExtend = false;
+      let epochsToAdd = 0;
+
+      // 比较NFT延长后的结束时间和Walrus存储当前剩余时间
+      const nftRemainingAfterExtend = nftNewEndTime - currentTime;
+
+      // 如果NFT延长后的剩余时间大于Walrus存储当前剩余时间，则需要延长Walrus存储
+      if (nftRemainingAfterExtend > walrusRemainingSeconds) {
+        // 计算需要额外延长的时间（秒）
+        const additionalTimeNeeded = nftRemainingAfterExtend - walrusRemainingSeconds;
+        console.log(`需要额外延长Walrus存储: ${additionalTimeNeeded}秒 (${(additionalTimeNeeded / (24 * 60 * 60)).toFixed(2)}天)`);
+
+        // 计算需要额外延长的epochs
+        const rawAdditionalEpochs = additionalTimeNeeded / epochDuration;
+        epochsToAdd = Math.max(1, Math.ceil(rawAdditionalEpochs)); // 至少延长1个epoch
+
+        console.log(`需要额外延长的epochs: ${rawAdditionalEpochs.toFixed(2)} -> ${epochsToAdd} (向上取整，最小为1)`);
+        needExtend = true;
+      } else {
+        console.log(`Walrus存储剩余时间足够，无需延长`);
+        needExtend = false;
+      }
+
+      // 计算目标结束epoch
+      const targetEndEpoch = endEpoch + epochsToAdd;
+
+      // 计算实际延长的时间（秒）
+      const actualExtendDuration = epochsToAdd * epochDuration;
+
+      console.log(`计算目标结束epoch: 当前结束epoch(${endEpoch}) + 延长epochs(${epochsToAdd}) = ${targetEndEpoch}`);
+      console.log(`实际延长时间: ${actualExtendDuration}秒 (${(actualExtendDuration / (24 * 60 * 60)).toFixed(2)}天)`);
+      console.log(`检查结果: 当前结束epoch=${endEpoch}, 目标结束epoch=${targetEndEpoch}, 需要延长=${needExtend}, 延长epochs=${epochsToAdd}`);
+
+      return {
+        needExtend,
+        currentEndEpoch: endEpoch,
+        targetEndEpoch,
+        epochsToAdd
+      };
+    } catch (error) {
+      console.error('检查是否需要延长存储期限时出错:', error);
+      // 出错时默认需要延长，以确保安全
+      return { needExtend: true, currentEndEpoch: 0, targetEndEpoch: 0, epochsToAdd: 1 };
+    }
+  }
 }
 
 // 创建单例实例

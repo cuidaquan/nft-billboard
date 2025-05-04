@@ -22,6 +22,14 @@ export const WAL_COIN_TYPES: Record<NetworkName, string> = {
 };
 
 /**
+ * 不同环境的epoch时长（秒）
+ */
+export const EPOCH_DURATION: Record<NetworkName, number> = {
+  testnet: 24 * 60 * 60,      // 测试网：1天
+  mainnet: 14 * 24 * 60 * 60  // 主网：2周
+};
+
+/**
  * Walrus服务配置
  */
 export const WALRUS_CONFIG = {
@@ -72,4 +80,12 @@ export function getWalrusAggregatorUrl(network: NetworkName): string {
  */
 export function getWalCoinType(): string {
   return WAL_COIN_TYPES[WALRUS_CONFIG.ENVIRONMENT];
+}
+
+/**
+ * 获取当前环境的epoch时长（秒）
+ * @returns epoch时长（秒）
+ */
+export function getEpochDuration(): number {
+  return EPOCH_DURATION[WALRUS_CONFIG.ENVIRONMENT];
 }

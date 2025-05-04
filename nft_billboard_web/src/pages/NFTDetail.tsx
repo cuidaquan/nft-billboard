@@ -281,6 +281,9 @@ const NFTDetailPage: React.FC = () => {
           });
 
           try {
+            // 更新本地nft数据为最新的链上数据
+            setNft(latestNft);
+
             // 先延长Walrus存储期限
             const storageExtended = await extendWalrusStorageDuration(latestNft.contentUrl, renewDays);
 
@@ -390,7 +393,7 @@ const NFTDetailPage: React.FC = () => {
 
   // 延长Walrus存储期限的函数
   const extendWalrusStorageDuration = async (contentUrl: string, renewDays: number) => {
-    if (!account) return;
+    if (!account || !nft) return;
 
     try {
       message.loading({
@@ -408,9 +411,9 @@ const NFTDetailPage: React.FC = () => {
         }
 
         // 从配置获取当前网络
-        const networkConfig = 'testnet'; // 可以从配置中获取
-        // 构建链ID
-        const chainId: `${string}:${string}` = `sui:${networkConfig}`;
+        // 注意：networkConfig和chainId在当前实现中未使用，但保留以便将来可能的扩展
+        // const networkConfig = 'testnet';
+        // const chainId: `${string}:${string}` = `sui:${networkConfig}`;
 
         return {
           // 签名交易方法
@@ -479,12 +482,19 @@ const NFTDetailPage: React.FC = () => {
       // 计算存储时长（秒）
       const duration = renewDays * 24 * 60 * 60;
 
+      // 计算NFT的结束时间（Unix时间戳，秒）
+      // 使用当前NFT的到期时间加上续期时间
+      const leaseEndTime = new Date(nft.leaseEnd).getTime() / 1000; // 转换为秒
+      console.log(`NFT当前结束时间: ${new Date(leaseEndTime * 1000).toLocaleString()}`);
+
       // 调用Walrus服务延长存储期限，传入contentUrl而不是blobId
       // 使用epochs模式延长存储期限
-      await walrusService.extendStorageDuration(contentUrl, duration, createSigner(), {
-        // 不使用endEpoch模式，使用默认的epochs模式
-        useEndEpoch: false
-      });
+      await walrusService.extendStorageDuration(
+        contentUrl,
+        duration,
+        createSigner(),
+        leaseEndTime
+        );
 
       message.success({
         content: t('nftDetail.transaction.extendWalrusSuccess'),
