@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Button, Upload, message, Radio, Spin, Form, Input, Progress, Tooltip, Card } from 'antd';
-import { UploadOutlined, CheckCircleOutlined, InfoCircleOutlined, InboxOutlined, FileOutlined, LinkOutlined, LoadingOutlined } from '@ant-design/icons';
+import { Button, Upload, message, Radio, Spin, Form, Input, Progress, Tooltip, Card, Typography } from 'antd';
+import { UploadOutlined, CheckCircleOutlined, InfoCircleOutlined, InboxOutlined, FileOutlined, LinkOutlined, LoadingOutlined, WalletOutlined } from '@ant-design/icons';
 import type { RcFile } from 'antd/lib/upload';
 import { walrusService, CustomSigner } from '../../utils/walrus';
 import './WalrusUpload.scss';
@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useWalletTransaction } from '../../hooks/useWalletTransaction';
 
 const { Dragger } = Upload;
+const { Text } = Typography;
 
 // 允许的文件类型
 const ALLOWED_FILE_TYPES = [
@@ -1103,6 +1104,23 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
                 <p>{t('walrusUpload.upload.requirements')}</p>
                 <p>{t('walrusUpload.upload.maxSize')}</p>
               </div>
+              {/* 显示WAL余额 */}
+              {storageMode === 'walrus' && account?.address && (
+                <div className="wal-balance-info" style={{
+                  marginTop: '12px',
+                  padding: '8px 12px',
+                  backgroundColor: '#f5f5f5',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center'
+                }}>
+                  <WalletOutlined style={{ marginRight: '8px', color: '#1677ff' }} />
+                  <Text>
+                    {t('nftDetail.modals.renewLease.walBalance')}: <Text strong>{walBalance} WAL</Text>
+                  </Text>
+                </div>
+              )}
             </Dragger>
           )}
         </>

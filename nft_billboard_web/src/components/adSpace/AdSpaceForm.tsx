@@ -460,22 +460,7 @@ const AdSpaceForm: React.FC<AdSpaceFormProps> = ({
                   </Col>
                 </Row>
 
-                {/* 如果选择上传到Walrus，显示WAL余额 */}
-                {contentParams.storageSource === 'walrus' && (
-                  <Row justify="space-between" align="middle" style={{ marginTop: '8px' }}>
-                    <Col>
-                      <Space>
-                        <WalletOutlined />
-                        <Text type="secondary">{t('nftDetail.modals.renewLease.walBalance')}</Text>
-                      </Space>
-                    </Col>
-                    <Col>
-                      <Text type="secondary">
-                        {walBalance} WAL
-                      </Text>
-                    </Col>
-                  </Row>
-                )}
+
               </div>
             )}
           </Space>
