@@ -1,3 +1,16 @@
+// 定义脉动动画
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(250, 84, 28, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(250, 84, 28, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(250, 84, 28, 0);
+  }
+}
+
 .walrus-upload-container {
   margin-bottom: 20px;
 
@@ -83,9 +96,26 @@
     }
 
     .upload-stage-info {
-      margin-top: 12px;
+      margin-top: 16px;
       font-size: 14px;
       color: #333;
+
+      .stage-text {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+
+        .stage-icon {
+          margin-right: 8px;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+        }
+
+        .stage-description {
+          font-weight: 500;
+        }
+      }
 
       .upload-stage-hint {
         font-size: 13px;
@@ -94,6 +124,26 @@
         padding: 8px 12px;
         border-radius: 4px;
         margin-top: 8px;
+
+        &.upload-stage-hint-info {
+          color: #1890ff;
+          background-color: #e6f7ff;
+          border: 1px solid #91d5ff;
+        }
+
+        &.upload-stage-hint-success {
+          color: #52c41a;
+          background-color: #f6ffed;
+          border: 1px solid #b7eb8f;
+        }
+
+        &.upload-stage-hint-warning {
+          color: #fa541c;
+          background-color: #fff2e8;
+          border: 1px solid #ffbb96;
+          font-weight: 500;
+          animation: pulse 2s infinite;
+        }
       }
     }
   }

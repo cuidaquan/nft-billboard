@@ -522,10 +522,14 @@
       "uploading": "正在上传文件到Walrus存储网络...",
       "preparing": "准备上传文件...",
       "signing": "等待钱包签名交易...",
+      "firstSigning": "第一次签名：确认存储费用...",
+      "secondSigning": "第二次签名：确认文件存储...",
       "signSuccess": "交易签名成功",
       "finalizing": "正在完成上传，生成访问链接...",
       "completed": "上传完成！",
-      "signingHint": "请在钱包中确认交易，请勿关闭此页面"
+      "signingHint": "请在钱包中确认交易，请勿关闭此页面",
+      "firstSigningHint": "请在钱包中确认第一笔交易（存储费用），请勿关闭此页面",
+      "secondSigningHint": "请在钱包中确认第二笔交易（文件存储），请勿关闭此页面"
     },
     "external": {
       "placeholder": "请输入完整的外部媒体URL，包括http://或https://",

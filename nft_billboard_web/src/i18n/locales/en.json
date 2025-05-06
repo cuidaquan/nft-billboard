@@ -521,11 +521,15 @@
       "title": "Uploading",
       "preparing": "Preparing to upload file...",
       "signing": "Waiting for wallet signature...",
+      "firstSigning": "First signature: Confirming storage fee...",
+      "secondSigning": "Second signature: Confirming file storage...",
       "signSuccess": "Transaction signed successfully",
       "uploading": "Uploading file to Walrus storage network...",
       "finalizing": "Finalizing upload, generating access link...",
       "completed": "Upload completed!",
-      "signingHint": "Please confirm the transaction in your wallet, do not close this page"
+      "signingHint": "Please confirm the transaction in your wallet, do not close this page",
+      "firstSigningHint": "Please confirm the first transaction (storage fee) in your wallet, do not close this page",
+      "secondSigningHint": "Please confirm the second transaction (file storage) in your wallet, do not close this page"
     },
     "external": {
       "placeholder": "Please enter complete external media URL, including http:// or https://",

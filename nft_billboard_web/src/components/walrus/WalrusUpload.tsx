@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button, Upload, message, Radio, Spin, Form, Input, Progress, Tooltip, Card } from 'antd';
 import { UploadOutlined, CheckCircleOutlined, InfoCircleOutlined, InboxOutlined, FileOutlined, LinkOutlined, LoadingOutlined } from '@ant-design/icons';
 import type { RcFile } from 'antd/lib/upload';
@@ -46,7 +46,7 @@ interface WalrusUploadProps {
 }
 
 // 上传阶段枚举
-type UploadStage = 'preparing' | 'signing' | 'uploading' | 'finalizing' | 'completed' | 'idle';
+type UploadStage = 'preparing' | 'firstSigning' | 'uploading' | 'secondSigning' | 'finalizing' | 'completed' | 'idle';
 
 /**
  * Walrus文件上传组件
@@ -80,6 +80,14 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
   const [uploadStage, setUploadStage] = useState<UploadStage>('idle');
   // 上传文件名称
   const [uploadingFileName, setUploadingFileName] = useState('');
+  // 使用useRef跟踪当前上传阶段，避免异步更新问题
+  const currentStageRef = useRef<UploadStage>('idle');
+  // 进度条动画定时器
+  const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // 跟踪签名次数
+  const [signingCount, setSigningCount] = useState(0);
+  // 使用ref跟踪签名次数，避免异步更新问题
+  const signingCountRef = useRef(0);
 
   const account = useCurrentAccount();
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
@@ -104,9 +112,8 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
       signTransaction: async (tx: any) => {
         console.log('准备签名交易，交易对象:', tx);
 
-        // 更新上传阶段为签名中
-        setUploadStage('signing');
-        setUploadProgress(30);
+        // 更新上传阶段为第一次签名中
+        updateUploadStage('firstSigning');
 
         // 确保交易对象包含 sender 信息
         if (tx && typeof tx === 'object' && 'setSender' in tx && typeof tx.setSender === 'function') {
@@ -128,9 +135,15 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
               transactionBlock.setSender(account.address);
             }
 
-            // 使用新的executeTransaction函数
+            // 根据签名计数判断是第几次签名
+            const isFirstSigning = signingCountRef.current === 0;
+            console.log(`准备执行签名，当前签名计数: ${signingCountRef.current}, 是第一次签名: ${isFirstSigning}`);
+
+            // 显示相应的签名提示
             message.loading({
-              content: t('walrusUpload.progress.signing'),
+              content: isFirstSigning
+                ? t('walrusUpload.progress.firstSigning')
+                : t('walrusUpload.progress.secondSigning'),
               key: 'walrusUpload',
               duration: 0
             });
@@ -150,9 +163,14 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
 
             const response = result;
 
-            // 签名完成后更新进度
-            setUploadProgress(50);
-            setUploadStage('uploading');
+            // 第一次签名完成后更新进度为上传中
+            // 只有在当前不是secondSigning状态时才更新为uploading
+            if (currentStageRef.current !== 'secondSigning') {
+              console.log(`第一次签名完成，更新进度为上传中，将自动从15%推进到95%`);
+              updateUploadStage('uploading');
+            } else {
+              console.log(`当前已经是secondSigning状态，不更新为uploading状态`);
+            }
 
             if (!response) {
               throw new Error('交易签名未返回结果');
@@ -206,9 +224,15 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
 
         // 使用 Promise 包装 signAndExecute 调用，确保它返回结果
         try {
-          // 使用新的executeTransaction函数
+          // 根据签名计数判断是第几次签名
+          const isFirstSigning = signingCountRef.current === 0;
+          console.log(`准备执行签名，当前签名计数: ${signingCountRef.current}, 是第一次签名: ${isFirstSigning}`);
+
+          // 显示相应的签名提示
           message.loading({
-            content: t('walrusUpload.progress.signing'),
+            content: isFirstSigning
+              ? t('walrusUpload.progress.firstSigning')
+              : t('walrusUpload.progress.secondSigning'),
             key: 'walrusUpload',
             duration: 0
           });
@@ -228,9 +252,14 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
 
           const response = result;
 
-          // 签名完成后更新进度
-          setUploadProgress(50);
-          setUploadStage('uploading');
+          // 第一次签名完成后更新进度为上传中
+          // 只有在当前不是secondSigning状态时才更新为uploading
+          if (currentStageRef.current !== 'secondSigning') {
+            console.log(`第一次签名完成，更新进度为上传中，将自动从15%推进到95%`);
+            updateUploadStage('uploading');
+          } else {
+            console.log(`当前已经是secondSigning状态，不更新为uploading状态`);
+          }
 
           if (!response) {
             throw new Error('交易签名未返回结果');
@@ -343,11 +372,24 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
       return false;
     }
 
+    // 检查当前是否已经在上传中
+    if (uploading) {
+      console.log('当前已经在上传中，不重复启动上传流程');
+      return false;
+    }
+
     setUploading(true);
     // 重置上传状态并设置为准备中
-    setUploadProgress(10);
-    setUploadStage('preparing');
     setUploadingFileName(file.name);
+    // 确保进度条从0开始
+    setUploadProgress(0);
+    // 重置签名计数
+    signingCountRef.current = 0;
+    setSigningCount(0);
+    // 重置当前状态引用
+    currentStageRef.current = 'idle';
+    console.log('开始新的上传，重置签名计数为0，当前状态为idle');
+    updateUploadStage('preparing');
 
     try {
       // 计算存储时长，考虑自定义开始时间
@@ -367,27 +409,86 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
       // 创建Signer对象
       const signer = createSigner();
 
-      // 在uploadFile调用前更新进度为上传中
-      setUploadProgress(60);
-      setUploadStage('uploading');
+      // 在uploadFile调用前确保进度为上传中
+      // 这里不需要再次调用updateUploadStage，因为在签名完成后已经更新了状态
 
-      // 使用新的接口调用uploadFile
+      // 定义第二次签名开始的回调函数
+      const handleSecondSigningStart = () => {
+        console.log('===== 第二次签名开始 =====');
+        console.log('当前阶段:', uploadStage);
+        console.log('当前进度:', uploadProgress);
+        console.log('签名计数:', signingCountRef.current);
+        console.log('当前状态引用:', currentStageRef.current);
+
+        // 停止所有正在进行的进度条自动推进
+        if (progressTimerRef.current) {
+          console.log('停止当前的进度条自动推进');
+          clearInterval(progressTimerRef.current);
+          progressTimerRef.current = null;
+        }
+
+        // 显示第二次签名提示
+        message.loading({
+          content: t('walrusUpload.progress.secondSigning'),
+          key: 'walrusUpload',
+          duration: 0
+        });
+
+        // 检查当前状态，如果已经是secondSigning，则不需要再次更新
+        if (currentStageRef.current === 'secondSigning') {
+          console.log('当前已经是secondSigning状态，不需要再次更新');
+        } else {
+          // 强制设置为secondSigning状态
+          console.log('强制更新状态为secondSigning');
+          updateUploadStage('secondSigning');
+        }
+
+        // 获取当前实际进度，避免使用可能已过期的uploadProgress状态
+        // 如果当前进度小于95%，强制设置为95%
+        const currentActualProgress = uploadProgress;
+        if (currentActualProgress < 95) {
+          console.log(`当前进度(${currentActualProgress}%)小于95%，强制设置为95%`);
+          setUploadProgress(95);
+        } else {
+          console.log(`当前进度(${currentActualProgress}%)已经达到或超过95%，保持不变`);
+        }
+
+        // 记录详细的状态信息
+        console.log(`第二次签名状态详情：
+          - 当前阶段: ${currentStageRef.current}
+          - 目标阶段: secondSigning
+          - 当前进度: ${currentActualProgress}%
+          - 目标进度: 95%
+          - 签名计数: ${signingCountRef.current}
+        `);
+
+        console.log('===== 第二次签名状态更新完成 =====');
+      };
+
+      // 使用新的接口调用uploadFile，传递第二次签名回调函数
       const result = await walrusService.uploadFile(
         file,
         duration,
         account.address,
         signer,
-        leaseDays // 传递租赁天数，用于日志记录
+        leaseDays, // 传递租赁天数，用于日志记录
+        handleSecondSigningStart // 传递第二次签名回调函数
       );
 
-      // 上传完成，更新进度为完成阶段
-      setUploadProgress(90);
-      setUploadStage('finalizing');
+      // 文件上传和签名都已完成，显示成功消息
+      message.success({
+        content: t('walrusUpload.progress.signSuccess'),
+        key: 'walrusUpload',
+        duration: 1
+      });
 
+      // 进入最终处理阶段
+      updateUploadStage('finalizing');
+
+      // 短暂延迟后完成整个过程
       setTimeout(() => {
         // 最终完成
-        setUploadProgress(100);
-        setUploadStage('completed');
+        updateUploadStage('completed');
 
         // 设置上传成功状态和URL
         setUploadSuccess(true);
@@ -404,7 +505,7 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
           blobId: result.blobId,
           storageSource: 'walrus'
         });
-      }, 500);
+      }, 1000);
 
     } catch (error) {
       console.error('文件上传失败:', error);
@@ -435,18 +536,34 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
       }
 
       onError?.(err);
+
+      // 停止进度自动推进
+      if (progressTimerRef.current) {
+        console.log('上传失败，停止自动推进');
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
+
+      // 记录错误时的状态信息
+      console.log(`上传失败时的状态信息：
+        - 当前阶段: ${currentStageRef.current}
+        - 当前进度: ${uploadProgress}%
+        - 签名计数: ${signingCountRef.current}
+      `);
+
       // 重置上传状态
-      setUploadStage('idle');
-      setUploadProgress(0);
+      updateUploadStage('idle');
     } finally {
-      // 不要在这里马上设置uploading为false，而是在setUploadStage('completed')后延迟设置
-      if (uploadStage !== 'completed') {
+      // 不要在这里马上设置uploading为false，而是在updateUploadStage('completed')后延迟设置
+      // 使用类型断言确保TypeScript理解这是有效的比较
+      const currentStage = currentStageRef.current as UploadStage;
+      if (currentStage !== 'completed') {
         setUploading(false);
       } else {
         // 给用户一个短暂的时间看到100%完成状态
         setTimeout(() => {
           setUploading(false);
-        }, 1000);
+        }, 1500);
       }
     }
     return false;
@@ -476,9 +593,6 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
     });
 
     if (url) {
-      // 检查URL是否有效
-      const isValid = isValidUrl(url);
-
       // 显示预览（即使URL不完全有效，也可以尝试预览）
       setPreviewVisible(true);
 
@@ -530,10 +644,12 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
     switch (uploadStage) {
       case 'preparing':
         return t('walrusUpload.progress.preparing');
-      case 'signing':
-        return t('walrusUpload.progress.signing');
+      case 'firstSigning':
+        return t('walrusUpload.progress.firstSigning');
       case 'uploading':
         return t('walrusUpload.progress.uploading');
+      case 'secondSigning':
+        return t('walrusUpload.progress.secondSigning');
       case 'finalizing':
         return t('walrusUpload.progress.finalizing');
       case 'completed':
@@ -542,6 +658,251 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
         return '';
     }
   };
+
+  // 平滑更新进度条
+  const updateProgressSmoothly = (
+    startValue: number,
+    endValue: number,
+    duration: number = 1000,
+    onComplete?: () => void
+  ) => {
+    // 清除之前的定时器
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+    }
+
+    // 设置初始值
+    setUploadProgress(startValue);
+
+    // 计算步长和间隔
+    const steps = Math.max(20, Math.floor(duration / 30)); // 至少20步，每30ms一步，使动画更平滑
+    const interval = duration / steps;
+
+    let currentStep = 0;
+    let lastProgress = startValue;
+
+    // 创建定时器
+    progressTimerRef.current = setInterval(() => {
+      currentStep++;
+
+      if (currentStep >= steps) {
+        // 最后一步，确保达到目标值
+        setUploadProgress(endValue);
+        clearInterval(progressTimerRef.current as NodeJS.Timeout);
+        progressTimerRef.current = null;
+
+        // 执行完成回调
+        if (onComplete) {
+          onComplete();
+        }
+      } else {
+        // 使用缓动函数使进度更自然
+        // 使用二次缓动函数：t^2 (加速) 或 1-(1-t)^2 (减速)
+        let progress;
+        const t = currentStep / steps;
+
+        if (endValue > startValue) {
+          // 上升进度使用减速缓动
+          progress = startValue + (endValue - startValue) * (1 - Math.pow(1 - t, 2));
+        } else {
+          // 下降进度使用加速缓动
+          progress = startValue + (endValue - startValue) * (t * t);
+        }
+
+        // 确保进度至少增加1%，避免看起来停滞
+        const roundedProgress = Math.round(progress);
+        if (roundedProgress === Math.round(lastProgress) && currentStep % 3 === 0) {
+          lastProgress += (endValue > startValue ? 1 : -1);
+          setUploadProgress(Math.min(Math.max(0, Math.round(lastProgress)), 100));
+        } else {
+          lastProgress = progress;
+          setUploadProgress(Math.min(Math.max(0, roundedProgress), 100));
+        }
+      }
+    }, interval);
+  };
+
+  // 不添加超时检查，让状态自然转换
+  // 上传完成后，Walrus SDK 会调用 handleSecondSigningStart 函数
+  // 将状态从 uploading 转换为 secondSigning
+
+  // 更新上传阶段，同时更新进度条
+  const updateUploadStage = (stage: UploadStage, progress?: number) => {
+    // 获取当前进度值，用于平滑过渡
+    const currentProgress = uploadProgress;
+
+    // 记录状态变化，用于调试
+    console.log(`状态变化: ${currentStageRef.current} -> ${stage}, 签名计数: ${signingCountRef.current}`);
+
+    // 特殊处理签名状态
+    if (stage === 'firstSigning') {
+      // 增加签名计数
+      signingCountRef.current += 1;
+      console.log(`签名计数增加: ${signingCountRef.current}`);
+
+      // 如果之前的状态是uploading，说明这是第二次签名
+      if (currentStageRef.current === 'uploading') {
+        console.log('检测到第二次签名，修正状态为secondSigning');
+        stage = 'secondSigning';
+      }
+    }
+
+    // 防止状态回退
+    // 如果当前是secondSigning状态，不允许回退到uploading状态
+    if (currentStageRef.current === 'secondSigning' && stage === 'uploading') {
+      console.log('防止状态回退：当前已经是secondSigning状态，不允许回退到uploading状态');
+      return; // 直接返回，不执行后续的状态更新
+    }
+
+    // 检查是否需要停止自动推进
+    // 如果从 preparing 或 uploading 状态切换到其他状态，停止自动推进
+    if ((currentStageRef.current === 'preparing' || currentStageRef.current === 'uploading') &&
+        (stage !== 'preparing' && stage !== 'uploading')) {
+      if (progressTimerRef.current) {
+        console.log(`从${currentStageRef.current}状态切换到${stage}状态，停止自动推进`);
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
+    }
+
+    // 更新引用值，用于同步状态
+    currentStageRef.current = stage;
+
+    // 更新状态
+    setUploadStage(stage);
+
+    // 同步更新签名计数状态
+    setSigningCount(signingCountRef.current);
+
+    // 定义每个阶段的进度范围
+    const stageProgressRanges = {
+      'preparing': [0, 15],
+      'firstSigning': [15, 15],  // 固定值15%
+      'uploading': [15, 95],     // 上传阶段占大部分时间
+      'secondSigning': [95, 95], // 固定值95%
+      'finalizing': [95, 100],
+      'completed': [100, 100],   // 固定值100%
+      'idle': [0, 0]
+    };
+
+    // 根据阶段设置进度条
+    if (stage === 'idle') {
+      // 重置进度
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
+      setUploadProgress(0);
+    } else if (progress !== undefined) {
+      // 如果提供了明确的进度值，直接设置
+      setUploadProgress(progress);
+    } else {
+      // 获取当前阶段的进度范围
+      const [startProgress, endProgress] = stageProgressRanges[stage] || [0, 0];
+
+      // 确保进度只增不减
+      const effectiveStartProgress = Math.max(currentProgress, startProgress);
+
+      // 如果当前进度已经超过了这个阶段的结束进度，不做任何更改
+      if (currentProgress < endProgress) {
+        // 对于 preparing 和 uploading 状态，使用自动推进
+        if (stage === 'preparing' || stage === 'uploading') {
+          console.log(`进入${stage}阶段，启动匀速自动推进，当前进度: ${effectiveStartProgress}%，目标进度: ${endProgress}%`);
+
+          // 启动自动推进
+          if (progressTimerRef.current) {
+            clearInterval(progressTimerRef.current);
+            progressTimerRef.current = null;
+          }
+
+          // 使用每秒1.5%的固定增长率
+          const progressPerSecond = 1.5; // 每秒增长1.5%
+          const intervalMs = 100; // 更新间隔（毫秒）
+          const progressPerInterval = progressPerSecond * (intervalMs / 1000); // 每次更新增长的百分比
+
+          console.log(`匀速自动推进: 每秒${progressPerSecond}%, 每${intervalMs}ms ${progressPerInterval.toFixed(4)}%`);
+
+          // 创建一个进度引用，用于跟踪当前进度
+          const progressRef = { current: effectiveStartProgress };
+
+          // 创建定时器，定期增加进度
+          progressTimerRef.current = setInterval(() => {
+            // 使用引用获取当前进度，避免闭包问题
+            const currentProgress = progressRef.current;
+
+            // 如果当前进度已经达到或超过目标进度，停止定时器
+            if (currentProgress >= endProgress) {
+              if (progressTimerRef.current) {
+                console.log(`${stage}阶段进度已达到目标值 ${endProgress}%，停止自动推进，当前阶段: ${currentStageRef.current}`);
+                clearInterval(progressTimerRef.current);
+                progressTimerRef.current = null;
+              }
+              return;
+            }
+
+            // 检查当前阶段是否仍然是 preparing 或 uploading
+            if (currentStageRef.current !== stage) {
+              console.log(`检测到阶段变化: ${stage} -> ${currentStageRef.current}，停止自动推进`);
+              if (progressTimerRef.current) {
+                clearInterval(progressTimerRef.current);
+                progressTimerRef.current = null;
+              }
+              return;
+            }
+
+            // 计算新的进度，确保不超过目标进度
+            // 对于 uploading 状态，我们使用加速增长，确保不会停在中间位置
+            let newProgress;
+            if (stage === 'uploading') {
+              // 使用匀速增长，每秒增长1%
+              const baseIncrement = progressPerInterval;
+              const speedMultiplier = 1.0; // 固定速度倍率为1.0，保持匀速
+
+              // 计算实际增量
+              const actualIncrement = baseIncrement * speedMultiplier;
+
+              // 计算新进度
+              newProgress = Math.min(currentProgress + actualIncrement, endProgress);
+
+              // 不需要记录速度调整，因为使用匀速
+            } else {
+              // 其他状态使用正常增长
+              newProgress = Math.min(currentProgress + progressPerInterval, endProgress);
+            }
+
+            // 更新引用值
+            progressRef.current = newProgress;
+
+            // 计算整数进度值
+            const intProgress = Math.floor(newProgress);
+
+            // 更新进度条，只使用整数值
+            setUploadProgress(intProgress);
+
+            // 每1%记录一次日志
+            if (intProgress !== Math.floor(currentProgress)) {
+              console.log(`${stage}阶段进度更新: ${intProgress}%，当前阶段: ${currentStageRef.current}`);
+            }
+          }, intervalMs);
+        } else {
+          // 对于其他状态，使用平滑过渡
+          updateProgressSmoothly(effectiveStartProgress, endProgress);
+        }
+      }
+    }
+  };
+
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      // 清理所有定时器
+      if (progressTimerRef.current) {
+        console.log('组件卸载，清理所有定时器');
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
+    };
+  }, []);
 
   // 如果上传成功，直接显示媒体内容和URL
   if (uploadSuccess && uploadedUrl) {
@@ -683,13 +1044,39 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
                   status={uploadProgress < 100 ? "active" : "success"}
                   strokeColor={{
                     '0%': '#108ee9',
+                    '50%': '#1677ff',
                     '100%': '#87d068',
                   }}
+                  strokeWidth={6}
+                  showInfo={true}
+                  format={percent => `${percent ? percent.toFixed(0) : 0}%`}
                 />
                 <div className="upload-stage-info">
-                  <p>{getUploadStageText()}</p>
-                  {uploadStage === 'signing' && (
-                    <p className="upload-stage-hint">{t('walrusUpload.progress.signingHint')}</p>
+                  <div className="stage-text">
+                    <span className="stage-icon">
+                      {uploadStage === 'completed' ? (
+                        <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                      ) : (
+                        <LoadingOutlined style={{ color: '#1890ff' }} />
+                      )}
+                    </span>
+                    <span className="stage-description">{getUploadStageText()}</span>
+                  </div>
+                  {uploadStage === 'firstSigning' && (
+                    <p className="upload-stage-hint upload-stage-hint-warning">
+                      {t('walrusUpload.progress.firstSigningHint')}
+                    </p>
+                  )}
+                  {uploadStage === 'secondSigning' && (
+                    <p className="upload-stage-hint upload-stage-hint-warning">
+                      {t('walrusUpload.progress.secondSigningHint')}
+                    </p>
+                  )}
+                  {uploadStage === 'uploading' && (
+                    <p className="upload-stage-hint upload-stage-hint-info">{t('walrusUpload.upload.hint')}</p>
+                  )}
+                  {uploadStage === 'completed' && (
+                    <p className="upload-stage-hint upload-stage-hint-success">{t('walrusUpload.upload.uploadSuccess')}</p>
                   )}
                 </div>
               </Card>

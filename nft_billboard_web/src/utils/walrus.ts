@@ -98,6 +98,8 @@ export class WalrusService {
    * @param duration 存储时长(秒)
    * @param address 钱包地址
    * @param signer 签名对象
+   * @param leaseDays 租赁天数参数，用于日志记录
+   * @param onSecondSigningStart 第二次签名开始前的回调函数
    * @returns Promise<{blobId: string, url: string}>
    */
   async uploadFile(
@@ -105,7 +107,8 @@ export class WalrusService {
     duration: number,
     address: string,
     signer: Signer | CustomSigner,
-    leaseDays?: number // 添加租赁天数参数，用于日志记录
+    leaseDays?: number,
+    onSecondSigningStart?: () => void
   ): Promise<{ blobId: string, url: string }> {
     try {
       console.log(`正在上传文件到Walrus: ${file.name}, 大小: ${file.size} 字节`);
@@ -162,7 +165,17 @@ export class WalrusService {
           attributes: writeBlobOptions.attributes
         }));
 
+        // 执行实际的上传操作
+        console.log('开始执行文件上传...');
         const result = await this.client.writeBlob(writeBlobOptions);
+        console.log('文件上传完成，准备进行第二次签名...');
+
+        // 在上传完成后、第二次签名前调用回调函数
+        // 这样可以确保状态转换的顺序正确
+        if (onSecondSigningStart) {
+          console.log('调用第二次签名开始回调函数');
+          onSecondSigningStart();
+        }
 
         if (!result || !result.blobId) {
           throw new Error('文件上传失败：未获取到有效的blob信息');
