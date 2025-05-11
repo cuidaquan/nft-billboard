@@ -572,6 +572,7 @@
     },
     "width": "Width",
     "height": "Height",
+    "adSpace": "Ad Space",
     "buttons": {
       "submit": "Submit",
       "cancel": "Cancel",

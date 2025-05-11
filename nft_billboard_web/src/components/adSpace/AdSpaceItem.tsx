@@ -99,13 +99,20 @@ const AdSpaceItem: React.FC<AdSpaceItemProps> = ({
     }
   }, [activeNfts, currentNftIndex, mediaErrors]);
 
+  // 处理广告位名称，添加"广告位"文本
+  const processedName = React.useMemo(() => {
+    if (!adSpace.name) return '';
+    // 添加广告位文本
+    return `${adSpace.name} ${t('common.adSpace')}`;
+  }, [adSpace.name, t]);
+
   // 如果这是示例数据，不要显示完整卡片
   if (adSpace.isExample) {
     return (
       <Col xs={24}>
         <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f9f9f9', borderRadius: '8px' }}>
           <ColumnWidthOutlined style={{ fontSize: '48px', color: '#4e63ff', marginBottom: '16px' }} />
-          <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>{adSpace.name}</div>
+          <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>{processedName}</div>
           <div style={{ color: 'rgba(0, 0, 0, 0.45)', marginBottom: '24px' }}>{adSpace.description}</div>
         </div>
       </Col>
@@ -158,7 +165,7 @@ const AdSpaceItem: React.FC<AdSpaceItemProps> = ({
           </div>
         </div>
         <Card.Meta
-          title={adSpace.name}
+          title={processedName}
           className="ad-space-meta"
         />
         <div className="ad-space-info">

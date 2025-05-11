@@ -91,6 +91,7 @@ const AdSpaceDetailPage: React.FC = () => {
         console.log('广告位没有creator字段:', space?.id);
       }
 
+          // 设置原始广告位数据
       setAdSpace(space);
 
       if (!space) {
@@ -157,6 +158,8 @@ const AdSpaceDetailPage: React.FC = () => {
   useEffect(() => {
     fetchAdSpace();
   }, [id]);
+
+
 
   // 轮播效果 - 每30秒切换一次活跃NFT
   useEffect(() => {
@@ -322,7 +325,7 @@ setCurrentNftIndex(prevIndex);
       <div className="ad-space-header">
         <Title level={2}>
           <BlockOutlined style={{ marginRight: '10px' }} />
-          {adSpace.name}
+          {adSpace?.name ? `${adSpace.name} ${t('common.adSpace')}` : ''}
         </Title>
       </div>
 
@@ -383,7 +386,7 @@ setCurrentNftIndex(prevIndex);
                 <div className="placeholder-content">
                   <Title level={3}>
                     <BlockOutlined style={{ marginRight: '10px' }} />
-                    {adSpace.name}
+                    {adSpace?.name ? `${adSpace.name} ${t('common.adSpace')}` : ''}
                   </Title>
                   <Paragraph>
                     <ColumnWidthOutlined style={{ marginRight: '10px' }} />
@@ -400,12 +403,8 @@ setCurrentNftIndex(prevIndex);
           <div className="ad-space-info">
             <Title level={4}>
               <BlockOutlined style={{ marginRight: '10px' }} />
-              {adSpace.name}
+              {adSpace?.name ? `${adSpace.name} ${t('common.adSpace')}` : ''}
             </Title>
-            <Paragraph>
-              <InfoCircleOutlined style={{ marginRight: '10px' }} />
-              {adSpace.description}
-            </Paragraph>
 
             <Space direction="vertical" className="ad-info">
               <div className="info-item">

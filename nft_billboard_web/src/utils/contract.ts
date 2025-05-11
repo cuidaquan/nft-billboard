@@ -1578,7 +1578,7 @@ export async function getAllAdSpacesFromFactory(factoryId: string, developerAddr
                 // 构建广告位数据
                 const adSpace: AdSpace = {
                   id: adSpaceId,
-                  name: adSpaceFields.game_id ? `${adSpaceFields.game_id} 广告位` : `广告位 ${adSpaceId.substring(0, 8)}`,
+                  name: adSpaceFields.game_id ? `${adSpaceFields.game_id}` : `${adSpaceId.substring(0, 8)}`,
                   description: adSpaceFields.location ? `位于 ${adSpaceFields.location} 的广告位` : '广告位详情',
                   imageUrl: `https://via.placeholder.com/${width}x${height}?text=${adSpaceFields.game_id || 'AdSpace'}`,
                   price: adSpaceFields.fixed_price || '0',
@@ -1734,7 +1734,7 @@ export async function getAdSpaceById(adSpaceId: string): Promise<AdSpace | null>
 
     // 提取game_id信息并构建名称
     const gameId = fields.game_id || '';
-    const name = gameId ? `${gameId} 广告位` : `广告位 ${adSpaceId.substring(0, 8)}`;
+    const name = gameId ? `${gameId}` : `${adSpaceId.substring(0, 8)}`;
 
     // 提取描述信息
     const description = fields.location ? `位于 ${fields.location} 的广告位` : '广告位详情';

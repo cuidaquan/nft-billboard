@@ -109,17 +109,21 @@ const ManagePage: React.FC = () => {
   // 监听activeKey变化，当显示"我的广告位"标签时自动加载数据
   useEffect(() => {
     if (activeKey === 'myAdSpaces' && account && userRole === UserRole.GAME_DEV) {
-      message.loading({ content: t('manage.myAdSpaces.loadingData'), key: 'loadAdSpaces', duration: 0 });
+      const loadingMsg = t('manage.myAdSpaces.loadingData');
+      const successMsg = t('manage.myAdSpaces.loadSuccess');
+      const failedMsg = t('manage.myAdSpaces.loadFailed');
+
+      message.loading({ content: loadingMsg, key: 'loadAdSpaces', duration: 0 });
       loadMyAdSpaces()
         .then(() => {
-          message.success({ content: t('manage.myAdSpaces.loadSuccess'), key: 'loadAdSpaces', duration: 2 });
+          message.success({ content: successMsg, key: 'loadAdSpaces', duration: 2 });
         })
         .catch((error) => {
           console.error('加载广告位数据失败:', error);
-          message.error({ content: t('manage.myAdSpaces.loadFailed'), key: 'loadAdSpaces', duration: 2 });
+          message.error({ content: failedMsg, key: 'loadAdSpaces', duration: 2 });
         });
     }
-  }, [activeKey, account, userRole, t]);
+  }, [activeKey, account, userRole]);
 
   // 加载开发者创建的广告位
   const loadMyAdSpaces = async () => {
@@ -842,30 +846,40 @@ const ManagePage: React.FC = () => {
   };
 
   // 渲染空广告位状态
-  const renderEmptyAdSpaces = () => (
-    <div className="empty-container" style={{ textAlign: 'center', padding: '40px 20px', background: '#f9f9f9', borderRadius: '8px' }}>
-      <AppstoreOutlined style={{ fontSize: '48px', color: '#4e63ff', marginBottom: '16px' }} />
-      <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>{t('manage.myAdSpaces.empty')}</div>
-      <div style={{ color: 'rgba(0, 0, 0, 0.45)', marginBottom: '24px' }}>{t('manage.myAdSpaces.emptyDesc')}</div>
-      <Button
-        type="primary"
-        size="large"
-        className="create-button"
-        onClick={() => setActiveKey('create')}
-        icon={<PlusOutlined />}
-      >
-        {t('manage.tabs.createAdSpace')}
-      </Button>
-    </div>
-  );
+  const renderEmptyAdSpaces = () => {
+    // 提前获取翻译文本，避免在渲染函数中直接使用t()
+    const emptyText = t('manage.myAdSpaces.empty');
+    const emptyDescText = t('manage.myAdSpaces.emptyDesc');
+    const createAdSpaceText = t('manage.tabs.createAdSpace');
+
+    return (
+      <div className="empty-container" style={{ textAlign: 'center', padding: '40px 20px', background: '#f9f9f9', borderRadius: '8px' }}>
+        <AppstoreOutlined style={{ fontSize: '48px', color: '#4e63ff', marginBottom: '16px' }} />
+        <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>{emptyText}</div>
+        <div style={{ color: 'rgba(0, 0, 0, 0.45)', marginBottom: '24px' }}>{emptyDescText}</div>
+        <Button
+          type="primary"
+          size="large"
+          className="create-button"
+          onClick={() => setActiveKey('create')}
+          icon={<PlusOutlined />}
+        >
+          {createAdSpaceText}
+        </Button>
+      </div>
+    );
+  };
 
   // 渲染我的广告位列表
   const renderMyAdSpaces = () => {
+    // 提前获取翻译文本，避免在渲染函数中直接使用t()
+    const loadingText = t('manage.myAdSpaces.loading');
+
     if (loadingAdSpaces) {
       return (
         <div className="loading-container">
           <Spin size="large" />
-          <p>{t('manage.myAdSpaces.loading')}</p>
+          <p>{loadingText}</p>
         </div>
       );
     }

@@ -196,6 +196,13 @@ const AdSpaceCard: React.FC<AdSpaceCardProps> = ({ adSpace, userRole, creatorAdd
     });
   }, [userOwnedNfts]);
 
+  // 处理广告位名称，添加"广告位"文本
+  const processedName = useMemo(() => {
+    if (!adSpace.name) return '';
+    // 添加广告位文本
+    return `${adSpace.name} ${t('common.adSpace')}`;
+  }, [adSpace.name, t]);
+
   return (
     <Card
       className="ad-space-card"
@@ -241,7 +248,7 @@ const AdSpaceCard: React.FC<AdSpaceCardProps> = ({ adSpace, userRole, creatorAdd
         ) : null
       ].filter(Boolean)}
     >
-      <Title level={4} className="ad-title">{adSpace.name}</Title>
+      <Title level={4} className="ad-title">{processedName}</Title>
 
       <Space direction="vertical" className="ad-info">
         <div className="info-item">
