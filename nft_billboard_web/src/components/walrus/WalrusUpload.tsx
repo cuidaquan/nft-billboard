@@ -816,8 +816,8 @@ const WalrusUpload: React.FC<WalrusUploadProps> = ({
             progressTimerRef.current = null;
           }
 
-          // 使用每秒1.5%的固定增长率
-          const progressPerSecond = 1.5; // 每秒增长1.5%
+          // 使用每秒0.6%的固定增长率
+          const progressPerSecond = 0.6; // 每秒增长0.6%
           const intervalMs = 100; // 更新间隔（毫秒）
           const progressPerInterval = progressPerSecond * (intervalMs / 1000); // 每次更新增长的百分比
 
