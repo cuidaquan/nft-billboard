@@ -60,202 +60,64 @@ export async function getAvailableAdSpaces(): Promise<AdSpace[]> {
   try {
     console.log('从链上获取可用广告位数据');
 
-    // 直接从区块链获取广告位数据
-    const client = createSuiClient();
+    // 导入getAllAdSpaces函数
+    const { getAllAdSpaces } = await import('./tableUtils');
 
-    // 获取工厂对象，包含ad_spaces列表
-    const factoryObject = await client.getObject({
-      id: CONTRACT_CONFIG.FACTORY_OBJECT_ID,
-      options: {
-        showContent: true,
-        showDisplay: true,
-        showType: true,
-      }
-    });
+    // 使用新的方法获取所有广告位
+    const allAdSpaces = await getAllAdSpaces(CONTRACT_CONFIG.FACTORY_OBJECT_ID);
+    console.log('使用Table API获取到广告位列表:', allAdSpaces);
 
-    console.log('获取到工厂对象:', factoryObject);
-
-    // 从工厂对象中直接解析广告位列表
-    if (factoryObject.data?.content?.dataType === 'moveObject') {
-      const fields = factoryObject.data.content.fields as any;
-      console.log('工厂对象字段:', fields);
-
-      // 检查广告位列表字段
-      if (fields && fields.ad_spaces) {
-        console.log('广告位列表数据结构:', JSON.stringify(fields.ad_spaces, null, 2));
-
-        // 获取广告位条目
-        let adSpaceEntries = [];
-        if (Array.isArray(fields.ad_spaces)) {
-          adSpaceEntries = fields.ad_spaces;
-          console.log('获取到广告位条目数组:', adSpaceEntries.length);
-
-          // 如果广告位数组为空，提前返回空状态
-          if (adSpaceEntries.length === 0) {
-            console.log('广告位列表为空数组，返回空状态提示');
-            return [{
-              id: '0x0',
-              name: '您还没有创建广告位',
-              description: '您尚未创建任何广告位，点击"创建广告位"按钮开始创建您的第一个广告位。',
-              imageUrl: 'https://via.placeholder.com/300x250?text=创建您的第一个广告位',
-              price: '0',
-              duration: 365,
-              dimension: { width: 0, height: 0 },
-              owner: null,
-              available: false,
-              location: '',
-              isExample: true, // 标记为示例数据
-              price_description: ''
-            }];
-          }
-        } else {
-          console.log('广告位数据不是数组，尝试从调试输出中提取');
-          adSpaceEntries = [fields.ad_spaces];
-        }
-
-        // 获取所有广告位ID
-        const allAdSpacePromises = [];
-
-        // 遍历所有广告位条目
-        for (const entry of adSpaceEntries) {
-          try {
-            // 获取广告位ID
-            let adSpaceId: string | null = null;
-
-            console.log('处理广告位条目:', JSON.stringify(entry, null, 2));
-
-            // 处理不同的数据结构情况
-            if (entry.ad_space_id) {
-              // 直接包含ad_space_id的情况
-              if (typeof entry.ad_space_id === 'string') {
-                adSpaceId = entry.ad_space_id;
-              } else if (entry.ad_space_id.id) {
-                adSpaceId = entry.ad_space_id.id;
-              }
-            } else if (entry.fields) {
-              // 包含在fields字段中的情况
-              if (entry.fields.ad_space_id) {
-                if (typeof entry.fields.ad_space_id === 'string') {
-                  adSpaceId = entry.fields.ad_space_id;
-                } else if (entry.fields.ad_space_id.id) {
-                  adSpaceId = entry.fields.ad_space_id.id;
-                }
-              }
-            }
-
-            console.log('提取的广告位ID:', adSpaceId);
-
-            if (adSpaceId) {
-              // 异步获取广告位详情
-              allAdSpacePromises.push(getAdSpaceById(adSpaceId).then(adSpace => {
-                if (adSpace) {
-                  console.log('成功获取广告位详情:', adSpace.id, '可用状态:', adSpace.available);
-                  return adSpace;
-                }
-                return null;
-              }));
-            }
-          } catch (err) {
-            console.error('处理广告位条目出错:', err);
-          }
-        }
-
-        // 等待所有广告位查询完成
-        console.log('等待广告位查询完成...');
-        const adSpacesResults = await Promise.all(allAdSpacePromises);
-        const allAdSpaces = adSpacesResults.filter(Boolean) as AdSpace[];
-
-        console.log('获取到所有广告位数量:', allAdSpaces.length);
-
-        // 过滤出可用的广告位
-        const availableAdSpaces = allAdSpaces.filter(adSpace => adSpace.available);
-
-        console.log('可用广告位数量:', availableAdSpaces.length);
-
-        if (availableAdSpaces.length === 0) {
-          console.log('没有可用的广告位');
-          // 如果没有可用的广告位，返回友好提示
-          return [{
-            id: '0x0',
-            name: '暂无可用广告位',
-            description: '目前没有可用的广告位，请稍后再来查看，或联系游戏开发者创建新的广告位。',
-            imageUrl: 'https://via.placeholder.com/300x250?text=暂无可用广告位',
-            price: '0',
-            duration: 365, // 改为365天
-            dimension: { width: 300, height: 250 },
-            owner: null,
-            available: false,
-            location: '无',
-            isExample: true, // 标记这是示例数据
-            price_description: '价格为每日租赁价格'
-          }];
-        }
-
-        // 获取每个广告位的创建者信息
-        for (const adSpace of availableAdSpaces) {
-          try {
-            // 从工厂对象中查找对应的广告位条目，获取创建者信息
-            const matchingEntry = adSpaceEntries.find((entry: any) => {
-              // 从条目中提取广告位ID
-              let entryAdSpaceId = null;
-              if (entry.ad_space_id) {
-                if (typeof entry.ad_space_id === 'string') {
-                  entryAdSpaceId = entry.ad_space_id;
-                } else if (entry.ad_space_id.id) {
-                  entryAdSpaceId = entry.ad_space_id.id;
-                }
-              } else if (entry.fields && entry.fields.ad_space_id) {
-                if (typeof entry.fields.ad_space_id === 'string') {
-                  entryAdSpaceId = entry.fields.ad_space_id;
-                } else if (entry.fields.ad_space_id.id) {
-                  entryAdSpaceId = entry.fields.ad_space_id.id;
-                }
-              }
-
-              // 比较ID
-              return entryAdSpaceId === adSpace.id;
-            });
-
-            // 如果找到匹配的条目且有创建者信息，则添加到广告位对象
-            if (matchingEntry && matchingEntry.creator) {
-              (adSpace as any).creator = matchingEntry.creator;
-              console.log(`为广告位 ${adSpace.id} 添加创建者信息:`, matchingEntry.creator);
-            } else if (matchingEntry && matchingEntry.fields && matchingEntry.fields.creator) {
-              (adSpace as any).creator = matchingEntry.fields.creator;
-              console.log(`为广告位 ${adSpace.id} 添加创建者信息:`, matchingEntry.fields.creator);
-            }
-          } catch (err) {
-            console.error(`为广告位 ${adSpace.id} 添加创建者信息时出错:`, err);
-          }
-        }
-
-        // 规范化广告位数据
-        return availableAdSpaces.map(adSpace => ({
-          ...adSpace,
-          name: adSpace.name || `广告位 ${adSpace.id.substring(0, 8)}`,
-          description: adSpace.description || `位于 ${adSpace.location || '未知位置'} 的广告位`,
-          imageUrl: adSpace.imageUrl || `https://via.placeholder.com/${adSpace.dimension.width}x${adSpace.dimension.height}?text=${encodeURIComponent(adSpace.name || 'AdSpace')}`,
-          duration: 365, // 确保都是365天
-          price_description: '价格为每日租赁价格'
-        }));
-      }
+    if (!allAdSpaces || allAdSpaces.length === 0) {
+      console.log('广告位列表为空，返回空状态提示');
+      return [{
+        id: '0x0',
+        name: '暂无可用广告位',
+        description: '目前没有可用的广告位，请稍后再来查看，或联系游戏开发者创建新的广告位。',
+        imageUrl: 'https://via.placeholder.com/300x250?text=暂无可用广告位',
+        price: '0',
+        duration: 365,
+        dimension: { width: 300, height: 250 },
+        owner: null,
+        available: false,
+        location: '无',
+        isExample: true,
+        price_description: '价格为每日租赁价格'
+      }];
     }
 
-    // 如果无法从链上获取数据，返回友好提示
-    console.log('从链上未能获取到广告位数据');
-    return [{
-      id: '0x0',
-      name: '数据加载失败',
-      description: '无法从区块链获取广告位数据，请刷新页面重试。',
-      imageUrl: 'https://via.placeholder.com/300x250?text=数据加载失败',
-      price: '0',
-      duration: 30,
-      dimension: { width: 300, height: 250 },
-      owner: null,
-      available: false,
-      location: '无',
-      isExample: true // 标记这是示例数据
-    }];
+    // 过滤出可用的广告位
+    const availableAdSpaces = allAdSpaces.filter(adSpace => adSpace.available);
+
+    console.log('可用广告位数量:', availableAdSpaces.length);
+
+    if (availableAdSpaces.length === 0) {
+      console.log('没有可用的广告位');
+      // 如果没有可用的广告位，返回友好提示
+      return [{
+        id: '0x0',
+        name: '暂无可用广告位',
+        description: '目前没有可用的广告位，请稍后再来查看，或联系游戏开发者创建新的广告位。',
+        imageUrl: 'https://via.placeholder.com/300x250?text=暂无可用广告位',
+        price: '0',
+        duration: 365,
+        dimension: { width: 300, height: 250 },
+        owner: null,
+        available: false,
+        location: '无',
+        isExample: true,
+        price_description: '价格为每日租赁价格'
+      }];
+    }
+
+    // 规范化广告位数据
+    return availableAdSpaces.map(adSpace => ({
+      ...adSpace,
+      name: adSpace.name || `广告位 ${adSpace.id.substring(0, 8)}`,
+      description: adSpace.description || `位于 ${adSpace.location || '未知位置'} 的广告位`,
+      imageUrl: adSpace.imageUrl || `https://via.placeholder.com/${adSpace.dimension.width}x${adSpace.dimension.height}?text=${encodeURIComponent(adSpace.name || 'AdSpace')}`,
+      duration: 365, // 确保都是365天
+      price_description: '价格为每日租赁价格'
+    }));
   } catch (error) {
     console.error('获取可用广告位失败:', error);
     // 出错时返回友好提示
@@ -1187,32 +1049,17 @@ export async function getGameDevsFromFactory(factoryId: string): Promise<string[
   }
 
   try {
-    const suiClient = createSuiClient();
+    // 导入getAllGameDevs函数
+    const { getAllGameDevs } = await import('./tableUtils');
 
-    // 获取Factory对象
-    const factoryObj = await suiClient.getObject({
-      id: factoryId,
-      options: {
-        showContent: true,
-      }
-    });
-
-    if (factoryObj.data && factoryObj.data.content && 'fields' in factoryObj.data.content) {
-      const fields = factoryObj.data.content.fields as any;
-
-      if (fields.game_devs && Array.isArray(fields.game_devs)) {
-        console.log('获取到开发者列表:', fields.game_devs);
-        return fields.game_devs;
-      } else {
-        console.log('Factory对象中无游戏开发者列表或格式不正确');
-        return [];
-      }
-    } else {
-      console.error('无法获取Factory对象内容');
-      return [];
-    }
+    // 使用新的方法获取游戏开发者列表
+    const gameDevs = await getAllGameDevs(factoryId);
+    console.log('使用Table API获取到开发者列表:', gameDevs);
+    return gameDevs;
   } catch (error) {
     console.error('获取游戏开发者列表失败:', error);
+
+    // 返回空数组
     return [];
   }
 }
@@ -1255,388 +1102,6 @@ export async function getPlatformRatio(factoryId: string): Promise<number> {
   } catch (error) {
     console.error('获取平台分成比例失败:', error);
     return 10; // 默认为10%
-  }
-}
-
-// 从Factory中获取所有广告位
-export async function getAllAdSpacesFromFactory(factoryId: string, developerAddress?: string): Promise<AdSpace[]> {
-  try {
-    // 生成一个唯一的请求ID，用于日志跟踪
-    const requestId = new Date().getTime().toString();
-    // 规范化开发者地址
-    const normalizedDevAddress = developerAddress ? developerAddress.toLowerCase() : '';
-
-    console.log(`[${requestId}] 从Factory获取所有广告位数据，开发者: ${normalizedDevAddress || '未指定'}`);
-    const client = createSuiClient();
-
-    // 获取工厂对象
-    const factoryObject = await client.getObject({
-      id: factoryId,
-      options: {
-        showContent: true,
-        showDisplay: true,
-        showType: true,
-      }
-    });
-
-    // 从工厂对象中直接获取广告位列表和创建者信息
-    if (factoryObject.data?.content?.dataType === 'moveObject') {
-      const fields = factoryObject.data.content.fields as any;
-      console.log(`[${requestId}] Factory对象字段列表:`, Object.keys(fields || {}));
-
-      // 添加更详细的调试信息，打印整个对象结构
-      try {
-        console.log(`[${requestId}] Factory原始字段:`, fields);
-
-        // 尝试检查raw数据结构
-        if (factoryObject.data?.bcs) {
-          console.log(`[${requestId}] Factory BCS数据存在`);
-        }
-
-        // 检查Fields键值
-        if (fields) {
-          console.log(`[${requestId}] Factory Fields键列表:`, Object.keys(fields));
-
-          // 针对ad_spaces特别检查
-          if (fields.ad_spaces) {
-            const adSpacesType = typeof fields.ad_spaces;
-            console.log(`[${requestId}] ad_spaces类型: ${adSpacesType}`);
-
-            if (adSpacesType === 'object') {
-              if (Array.isArray(fields.ad_spaces)) {
-                console.log(`[${requestId}] ad_spaces是数组，长度:`, fields.ad_spaces.length);
-
-                // 打印数组中第一个元素的结构
-                if (fields.ad_spaces.length > 0) {
-                  console.log(`[${requestId}] 第一个ad_space结构:`, fields.ad_spaces[0]);
-                  console.log(`[${requestId}] 第一个ad_space键列表:`, Object.keys(fields.ad_spaces[0]));
-                }
-              } else {
-                console.log(`[${requestId}] ad_spaces是非数组对象:`, fields.ad_spaces);
-                console.log(`[${requestId}] ad_spaces键列表:`, Object.keys(fields.ad_spaces));
-              }
-            }
-          }
-        }
-      } catch (debugError) {
-        console.error(`[${requestId}] 调试信息生成出错:`, debugError);
-      }
-
-      // 检查并打印ad_spaces的详细内容
-      if (fields && fields.ad_spaces) {
-        console.log(`[${requestId}] ad_spaces类型:`, typeof fields.ad_spaces);
-        console.log(`[${requestId}] ad_spaces是否数组:`, Array.isArray(fields.ad_spaces));
-        console.log(`[${requestId}] ad_spaces详细内容:`, JSON.stringify(fields.ad_spaces));
-
-        // 特殊处理ad_spaces的格式
-        const adSpacesEntries = Array.isArray(fields.ad_spaces) ? fields.ad_spaces :
-          (typeof fields.ad_spaces === 'object' ? [fields.ad_spaces] : []);
-
-        console.log(`[${requestId}] 处理后的ad_spaces条目总数:`, adSpacesEntries.length);
-
-        // 详细记录每个条目的类型和结构
-        adSpacesEntries.forEach((entry: any, index: number) => {
-          console.log(`[${requestId}] 条目[${index}]类型:`, typeof entry);
-          console.log(`[${requestId}] 条目[${index}]内容:`, entry);
-
-          // 检查创建者字段的存在方式
-          let creator = null;
-          let adSpaceId = null;
-
-          if (entry.creator) {
-            creator = entry.creator;
-          } else if (entry.fields && entry.fields.creator) {
-            creator = entry.fields.creator;
-          }
-
-          // 检查广告位ID的存在方式
-          if (entry.ad_space_id) {
-            adSpaceId = typeof entry.ad_space_id === 'string' ? entry.ad_space_id :
-              (entry.ad_space_id.id ? entry.ad_space_id.id : JSON.stringify(entry.ad_space_id));
-          } else if (entry.fields && entry.fields.ad_space_id) {
-            adSpaceId = typeof entry.fields.ad_space_id === 'string' ? entry.fields.ad_space_id :
-              (entry.fields.ad_space_id.id ? entry.fields.ad_space_id.id : JSON.stringify(entry.fields.ad_space_id));
-          }
-
-          console.log(`[${requestId}] 条目[${index}]创建者:`, creator);
-          console.log(`[${requestId}] 条目[${index}]广告位ID:`, adSpaceId);
-        });
-
-        // 详细记录每个条目的创建者地址，便于调试
-        console.log(`[${requestId}] ==== 广告位创建者地址列表 ====`);
-        adSpacesEntries.forEach((entry: any, index: number) => {
-          // 特殊处理不同格式的创建者字段
-          let creator = null;
-          if (entry.creator) {
-            creator = entry.creator;
-          } else if (entry.fields && entry.fields.creator) {
-            creator = entry.fields.creator;
-          }
-
-          if (creator) {
-            const creatorStr = typeof creator === 'string' ? creator :
-              (typeof creator === 'object' ? JSON.stringify(creator) : String(creator));
-            console.log(`[${requestId}] 条目[${index}] 创建者: ${creatorStr}`);
-          } else {
-            console.log(`[${requestId}] 条目[${index}] 创建者字段不存在或格式不正确:`, entry);
-          }
-        });
-
-        // 过滤出当前开发者创建的广告位，适应多种可能的格式
-        const devAdSpaceEntries = adSpacesEntries.filter((entry: any) => {
-          // 如果未指定开发者地址，则返回所有广告位
-          if (!normalizedDevAddress) {
-            return true;
-          }
-
-          // 提取创建者字段，考虑多种可能的结构
-          let creator = null;
-          if (entry.creator) {
-            creator = entry.creator;
-          } else if (entry.fields && entry.fields.creator) {
-            creator = entry.fields.creator;
-          }
-
-          if (!creator) {
-            console.log(`[${requestId}] 跳过无效条目 (无法找到创建者字段):`, entry);
-            return false;
-          }
-
-          // 规范化创建者地址为小写
-          const entryCreator = typeof creator === 'string' ? creator.toLowerCase() :
-            (typeof creator === 'object' ? JSON.stringify(creator).toLowerCase() : String(creator).toLowerCase());
-
-          console.log(`[${requestId}] 详细比较:
-            - 原始创建者数据: ${typeof creator === 'object' ? JSON.stringify(creator) : creator}
-            - 处理后的创建者: ${entryCreator}
-            - 规范化的查询地址: ${normalizedDevAddress}
-            - 地址类型: ${typeof creator}
-          `);
-
-          // 测试特定地址的匹配情况
-          if (normalizedDevAddress === "0x0020a8a7006d0f1eee952994192f67e41afabbb971678ac44eb068955193c6a4") {
-            console.log(`[${requestId}] 正在与已知地址0x0020a...进行比较`);
-            if (entryCreator.includes("0x0020a8a7006d0f1eee952994192f67e41afabbb971678ac44eb068955193c6a4")) {
-              console.log(`[${requestId}] 特殊匹配成功!`);
-              return true;
-            }
-          }
-
-          // 尝试多种可能的匹配方式
-          const exactMatch = entryCreator === normalizedDevAddress;
-          const containsMatch = entryCreator.includes(normalizedDevAddress) || normalizedDevAddress.includes(entryCreator);
-
-          console.log(`[${requestId}] 匹配结果:
-            - 完全匹配: ${exactMatch}
-            - 包含匹配: ${containsMatch}
-          `);
-
-          return exactMatch || containsMatch;
-        });
-
-        // 其余代码保持不变
-        console.log(`[${requestId}] 开发者创建的广告位条目数:`, devAdSpaceEntries.length);
-
-        if (devAdSpaceEntries.length === 0) {
-          console.log(`[${requestId}] 开发者没有创建过广告位`);
-          // 返回一个友好的提示广告位
-          return [{
-            id: '0x0',
-            name: '您还没有创建广告位',
-            description: '您尚未创建任何广告位，点击"创建广告位"按钮开始创建您的第一个广告位。',
-            imageUrl: 'https://via.placeholder.com/300x250?text=创建您的第一个广告位',
-            price: '0',
-            duration: 30,
-            dimension: { width: 0, height: 0 },
-            owner: null,
-            available: false,
-            location: '',
-            isExample: true, // 标记这是示例数据
-            price_description: ''
-          }];
-        }
-
-        // 获取开发者创建的广告位详细信息
-        const devAdSpaces: AdSpace[] = [];
-
-        for (const entry of devAdSpaceEntries) {
-          try {
-            console.log(`[${requestId}] 开始处理广告位条目:`, entry);
-
-            // 确保能够访问到广告位ID
-            if (!entry.fields && !entry.ad_space_id) {
-              console.error(`[${requestId}] 广告位条目缺少ad_space_id字段和fields字段:`, JSON.stringify(entry));
-              continue;
-            }
-
-            // 提取广告位ID
-            let adSpaceId = null;
-
-            // 检查不同位置的ad_space_id
-            if (entry.fields && entry.fields.ad_space_id) {
-              if (typeof entry.fields.ad_space_id === 'string') {
-                adSpaceId = entry.fields.ad_space_id;
-                console.log(`[${requestId}] 从fields.ad_space_id字符串获取到ID:`, adSpaceId);
-              } else if (entry.fields.ad_space_id.id) {
-                adSpaceId = entry.fields.ad_space_id.id;
-                console.log(`[${requestId}] 从fields.ad_space_id.id获取到ID:`, adSpaceId);
-              } else {
-                // 序列化复杂对象并提取ID
-                const objStr = JSON.stringify(entry.fields.ad_space_id);
-                console.log(`[${requestId}] 复杂的fields.ad_space_id:`, objStr);
-
-                // 尝试匹配任何0x开头的十六进制ID
-                const idMatch = objStr.match(/"(0x[a-fA-F0-9]+)"/);
-                if (idMatch && idMatch[1]) {
-                  adSpaceId = idMatch[1];
-                  console.log(`[${requestId}] 从复杂对象中提取到ID:`, adSpaceId);
-                }
-              }
-            } else if (entry.ad_space_id) {
-              // 直接从entry获取
-              if (typeof entry.ad_space_id === 'string') {
-                adSpaceId = entry.ad_space_id;
-              } else if (entry.ad_space_id.id) {
-                adSpaceId = entry.ad_space_id.id;
-              } else {
-                const objStr = JSON.stringify(entry.ad_space_id);
-                const idMatch = objStr.match(/"(0x[a-fA-F0-9]+)"/);
-                if (idMatch && idMatch[1]) {
-                  adSpaceId = idMatch[1];
-                }
-              }
-            }
-
-            if (!adSpaceId) {
-              console.error(`[${requestId}] 无法提取广告位ID:`, JSON.stringify(entry));
-              continue;
-            }
-
-            console.log(`[${requestId}] 成功提取广告位ID:`, adSpaceId);
-
-            // 获取广告位详情
-            const adSpace = await getAdSpaceById(adSpaceId);
-
-            if (adSpace) {
-              // 添加创建者信息到广告位，以便调试
-              (adSpace as any).creator = entry.creator;
-
-              devAdSpaces.push(adSpace);
-              console.log(`[${requestId}] 成功添加广告位:`, adSpace.id);
-            } else {
-              // 如果直接获取失败，尝试原有的方式
-              console.log(`[${requestId}] 直接获取广告位失败，尝试原有方式:`, adSpaceId);
-
-              // 获取广告位对象，使用相同的选项强制刷新
-              const adSpaceObject = await client.getObject({
-                id: adSpaceId,
-                options: {
-                  showContent: true,
-                  showDisplay: true,
-                  showBcs: false,
-                  showOwner: true,
-                  showPreviousTransaction: true,
-                  showStorageRebate: true,
-                }
-              });
-
-              if (adSpaceObject.data?.content?.dataType === 'moveObject') {
-                const adSpaceFields = adSpaceObject.data.content.fields as any;
-                console.log(`[${requestId}] 广告位对象字段:`, Object.keys(adSpaceFields || {}));
-                console.log(`[${requestId}] 广告位详细数据:`, adSpaceFields);
-
-                // 安全地获取尺寸信息
-                let width = 300, height = 250;
-                const aspectRatio = adSpaceFields.size || "16:9";
-
-                // 处理比例格式 (例如: "16:9")
-                if (adSpaceFields.size && typeof adSpaceFields.size === 'string') {
-                  if (adSpaceFields.size.includes(':')) {
-                    // 新的比例格式
-                    const [w, h] = adSpaceFields.size.split(':').map(Number);
-                    if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
-                      // 设置基于比例的预览尺寸
-                      const baseSize = 300;
-                      if (w >= h) {
-                        width = baseSize;
-                        height = Math.round(baseSize * (h / w));
-                      } else {
-                        height = baseSize;
-                        width = Math.round(baseSize * (w / h));
-                      }
-                    }
-                  } else if (adSpaceFields.size.includes('x')) {
-                    // 兼容旧的像素格式
-                    const sizeParts = adSpaceFields.size.split('x');
-                    if (sizeParts.length === 2) {
-                      width = parseInt(sizeParts[0]) || 300;
-                      height = parseInt(sizeParts[1]) || 250;
-                    }
-                  }
-                }
-
-                // 构建广告位数据
-                const adSpace: AdSpace = {
-                  id: adSpaceId,
-                  name: adSpaceFields.game_id ? `${adSpaceFields.game_id}` : `${adSpaceId.substring(0, 8)}`,
-                  description: adSpaceFields.location ? `位于 ${adSpaceFields.location} 的广告位` : '广告位详情',
-                  imageUrl: `https://via.placeholder.com/${width}x${height}?text=${adSpaceFields.game_id || 'AdSpace'}`,
-                  price: adSpaceFields.fixed_price || '0',
-                  duration: 30, // 默认30天
-                  dimension: {
-                    width,
-                    height,
-                  },
-                  aspectRatio, // 添加比例字段
-                  owner: null, // 初始没有所有者
-                  available: adSpaceFields.is_available !== undefined ? adSpaceFields.is_available : true,
-                  location: adSpaceFields.location || '未知位置',
-                };
-
-                // 添加创建者信息到广告位，以便调试
-                (adSpace as any).creator = entry.creator;
-
-                devAdSpaces.push(adSpace);
-                console.log(`[${requestId}] 成功添加广告位:`, adSpace.id);
-              } else {
-                console.warn(`[${requestId}] 获取的广告位不是Move对象类型:`, adSpaceObject.data?.content?.dataType);
-              }
-            }
-          } catch (err) {
-            console.error(`[${requestId}] 获取单个广告位详情失败:`, err);
-            // 继续处理下一个广告位
-          }
-        }
-
-        console.log(`[${requestId}] 完成广告位数据加载，共找到 ${devAdSpaces.length} 个广告位`);
-
-        if (devAdSpaces.length === 0) {
-          console.log(`[${requestId}] 获取到的有效广告位数量为0，返回提示广告位`);
-          return [{
-            id: '0x0',
-            name: '无可用广告位',
-            description: '无法获取您创建的广告位详细信息，请确保合约数据正确。',
-            imageUrl: 'https://via.placeholder.com/300x250?text=无可用广告位',
-            price: '0',
-            duration: 30,
-            dimension: { width: 0, height: 0 },
-            owner: null,
-            available: false,
-            location: '',
-            isExample: true,
-            price_description: ''
-          }];
-        }
-
-        return devAdSpaces;
-      }
-    }
-
-    console.warn(`[${requestId}] 未能找到游戏开发者列表，工厂对象结构:`, factoryObject);
-    return [];
-  } catch (error) {
-    console.error('获取游戏开发者列表失败:', error);
-    return [];
   }
 }
 
@@ -1868,7 +1333,231 @@ export async function getAdSpaceById(adSpaceId: string): Promise<AdSpace | null>
 
 // 获取游戏开发者创建的广告位列表
 export async function getCreatedAdSpaces(developerAddress: string): Promise<AdSpace[]> {
-  return getAllAdSpacesFromFactory(CONTRACT_CONFIG.FACTORY_OBJECT_ID, developerAddress);
+  // 如果使用模拟数据，返回模拟的广告位
+  if (USE_MOCK_DATA) {
+    console.log('使用模拟广告位数据');
+    // 使用与getAvailableAdSpaces相同的模拟数据
+    const mockAdSpaces: AdSpace[] = [
+      {
+        id: '0x123',
+        name: '首页顶部广告位',
+        description: '网站首页顶部横幅广告位，高曝光量',
+        imageUrl: 'https://example.com/ad-space-1.jpg',
+        price: '100000000', // 0.1 SUI
+        duration: 30, // 30天
+        dimension: {
+          width: 1200,
+          height: 300,
+        },
+        owner: null,
+        available: true,
+        location: '首页顶部',
+      },
+      {
+        id: '0x456',
+        name: '侧边栏广告位',
+        description: '网站所有页面侧边栏广告位',
+        imageUrl: 'https://example.com/ad-space-2.jpg',
+        price: '50000000', // 0.05 SUI
+        duration: 30, // 30天
+        dimension: {
+          width: 300,
+          height: 600,
+        },
+        owner: null,
+        available: true,
+        location: '所有页面侧边栏',
+      },
+    ];
+    return mockAdSpaces;
+  }
+
+  // 实际从链上获取数据
+  try {
+    console.log('从链上获取开发者创建的广告位数据，开发者地址:', developerAddress);
+
+    if (!developerAddress || !developerAddress.startsWith('0x')) {
+      console.error('开发者地址无效:', developerAddress);
+      return [];
+    }
+
+    // 生成一个唯一的请求ID，用于日志跟踪
+    const requestId = new Date().getTime().toString();
+    console.log(`[${requestId}] 开始获取开发者创建的广告位数据`);
+
+    const client = createSuiClient();
+
+    // 构建AdSpace类型字符串，用于过滤
+    const adSpaceTypeStr = `${CONTRACT_CONFIG.PACKAGE_ID}::ad_space::AdSpace`;
+    console.log(`[${requestId}] 使用类型过滤:`, adSpaceTypeStr);
+
+    // 使用分页方式获取所有广告位对象
+    let hasNextPage = true;
+    let cursor: string | null = null;
+    const pageSize = 50; // 每页获取的数量（Sui SDK的最大限制是50）
+    const allAdSpaceObjects: any[] = [];
+
+    // 循环获取所有页面的数据
+    while (hasNextPage) {
+      console.log(`[${requestId}] 获取页面数据，cursor:`, cursor);
+
+      // 使用类型过滤直接查询用户拥有的广告位对象
+      const ownedObjects: PaginatedObjectsResponse = await client.getOwnedObjects({
+        owner: developerAddress,
+        filter: {
+          StructType: adSpaceTypeStr
+        },
+        options: {
+          showContent: true,
+          showDisplay: true,
+          showType: true,
+        },
+        cursor,
+        limit: pageSize
+      });
+
+      console.log(`[${requestId}] 当前页获取到对象数量:`, ownedObjects.data?.length || 0);
+
+      // 添加当前页的对象到结果集
+      if (ownedObjects.data && ownedObjects.data.length > 0) {
+        allAdSpaceObjects.push(...ownedObjects.data);
+      }
+
+      // 检查是否有下一页
+      if (ownedObjects.hasNextPage && ownedObjects.nextCursor) {
+        cursor = ownedObjects.nextCursor;
+        console.log(`[${requestId}] 存在下一页，nextCursor:`, cursor);
+      } else {
+        hasNextPage = false;
+        console.log(`[${requestId}] 已获取所有页面数据`);
+      }
+    }
+
+    console.log(`[${requestId}] 获取到开发者拥有的广告位对象总数:`, allAdSpaceObjects.length);
+
+    // 如果没有找到任何对象，直接返回空数组
+    if (allAdSpaceObjects.length === 0) {
+      console.log(`[${requestId}] 开发者没有拥有任何广告位对象`);
+      return [{
+        id: '0x0',
+        name: '您还没有创建广告位',
+        description: '您尚未创建任何广告位，点击"创建广告位"按钮开始创建您的第一个广告位。',
+        imageUrl: 'https://via.placeholder.com/300x250?text=创建您的第一个广告位',
+        price: '0',
+        duration: 30,
+        dimension: { width: 0, height: 0 },
+        owner: null,
+        available: false,
+        location: '',
+        isExample: true, // 标记这是示例数据
+        price_description: ''
+      }];
+    }
+
+    // 转换为前端使用的AdSpace数据结构
+    const adSpaces: AdSpace[] = [];
+
+    for (const adSpaceObj of allAdSpaceObjects) {
+      try {
+        if (!adSpaceObj.data?.content || adSpaceObj.data.content.dataType !== 'moveObject') {
+          console.warn(`[${requestId}] 广告位对象不是moveObject类型:`, adSpaceObj.data?.objectId);
+          continue;
+        }
+
+        // 类型断言为含有fields的对象
+        const moveObject = adSpaceObj.data.content as { dataType: 'moveObject', fields: Record<string, any> };
+        if (!moveObject.fields) {
+          console.warn(`[${requestId}] 广告位对象没有fields字段:`, adSpaceObj.data?.objectId);
+          continue;
+        }
+
+        const fields = moveObject.fields;
+        console.log(`[${requestId}] 广告位对象字段:`, adSpaceObj.data.objectId, Object.keys(fields));
+
+        // 记录完整字段内容以便调试
+        console.log(`[${requestId}] 广告位字段详细内容:`, JSON.stringify(fields, null, 2));
+
+        // 提取广告位信息
+        const gameId = fields.game_id || '';
+        const location = fields.location || '未知位置';
+        const price = fields.fixed_price || '0';
+        const isAvailable = fields.is_available !== undefined ? fields.is_available : true;
+
+        // 安全地获取尺寸信息
+        let width = 300, height = 250;
+        const aspectRatio = fields.size || "16:9";
+
+        // 处理比例格式 (例如: "16:9")
+        if (fields.size && typeof fields.size === 'string') {
+          if (fields.size.includes(':')) {
+            // 新的比例格式
+            const [w, h] = fields.size.split(':').map(Number);
+            if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
+              // 设置基于比例的预览尺寸
+              const baseSize = 300;
+              if (w >= h) {
+                width = baseSize;
+                height = Math.round(baseSize * (h / w));
+              } else {
+                height = baseSize;
+                width = Math.round(baseSize * (w / h));
+              }
+            }
+          } else if (fields.size.includes('x')) {
+            // 兼容旧的像素格式
+            const sizeParts = fields.size.split('x');
+            if (sizeParts.length === 2) {
+              width = parseInt(sizeParts[0]) || 300;
+              height = parseInt(sizeParts[1]) || 250;
+            }
+          }
+        }
+
+        // 构建广告位数据
+        const adSpace: AdSpace = {
+          id: adSpaceObj.data.objectId,
+          name: gameId ? `${gameId}` : `${adSpaceObj.data.objectId.substring(0, 8)}`,
+          description: location ? `位于 ${location} 的广告位` : '广告位详情',
+          imageUrl: `https://via.placeholder.com/${width}x${height}?text=${gameId || 'AdSpace'}`,
+          price: price,
+          duration: 30, // 默认30天
+          dimension: {
+            width,
+            height,
+          },
+          aspectRatio, // 添加比例字段
+          owner: developerAddress, // 开发者就是所有者
+          available: isAvailable,
+          location: location,
+        };
+
+        adSpaces.push(adSpace);
+        console.log(`[${requestId}] 成功添加广告位:`, adSpace.id);
+      } catch (err) {
+        console.error(`[${requestId}] 解析广告位时出错:`, adSpaceObj.data?.objectId, err);
+      }
+    }
+
+    console.log(`[${requestId}] 成功获取开发者广告位数量:`, adSpaces.length);
+    return adSpaces;
+  } catch (error) {
+    console.error('获取开发者广告位失败:', error);
+
+    // 返回友好的错误提示
+    return [{
+      id: '0x0',
+      name: '数据加载失败',
+      description: '加载广告位数据时发生错误，请刷新页面重试。',
+      imageUrl: 'https://via.placeholder.com/300x250?text=加载失败',
+      price: '0',
+      duration: 30,
+      dimension: { width: 300, height: 250 },
+      owner: null,
+      available: false,
+      location: '无',
+      isExample: true // 标记这是示例数据
+    }];
+  }
 }
 
 // 移除游戏开发者的交易
