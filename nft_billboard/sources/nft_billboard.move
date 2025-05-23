@@ -8,7 +8,7 @@ module nft_billboard::nft_billboard {
     use sui::clock::Clock;
     use std::string::{Self, String};
     use std::option::{Self, Option};
-    
+
     use nft_billboard::ad_space::{Self, AdSpace};
     use nft_billboard::nft;
     use nft_billboard::factory::{Self, Factory};
@@ -142,7 +142,7 @@ module nft_billboard::nft_billboard {
     ) {
         // 验证调用者是否为管理员
         assert!(factory::get_admin(factory) == tx_context::sender(ctx), ENotAdmin);
-        
+
         factory::update_ratios(factory, platform_ratio, ctx)
     }
 
@@ -154,7 +154,7 @@ module nft_billboard::nft_billboard {
     ) {
         // 验证调用者是否为广告位创建者
         assert!(ad_space::get_creator(ad_space) == tx_context::sender(ctx), ENotAdSpaceCreator);
-        
+
         ad_space::update_price(ad_space, daily_price, ctx)
     }
 
@@ -165,11 +165,12 @@ module nft_billboard::nft_billboard {
         ctx: &mut TxContext
     ) {
         // 验证调用者是否为广告位创建者
-        assert!(ad_space::get_creator(&ad_space) == tx_context::sender(ctx), ENotAdSpaceCreator);
-        
+        let creator = ad_space::get_creator(&ad_space);
+        assert!(creator == tx_context::sender(ctx), ENotAdSpaceCreator);
+
         // 从工厂中移除广告位
-        factory::remove_ad_space(factory, object::id(&ad_space), ctx);
-        
+        factory::remove_ad_space(factory, object::id(&ad_space), creator, ctx);
+
         // 删除广告位对象
         ad_space::delete_ad_space(ad_space, ctx);
     }

@@ -403,7 +403,8 @@
       "refreshFailed": "刷新广告位列表失败，请手动刷新页面",
       "deleteFailed": "删除广告位失败",
       "priceUpdateFailed": "价格更新失败",
-      "invalidPrice": "请输入有效的价格"
+      "invalidPrice": "请输入有效的价格",
+      "cannotDeleteWithActiveNFTs": "该广告位下有活跃或待展示的NFT，无法删除"
     },
     "registerDev": {
       "title": "注册游戏开发者",
@@ -456,6 +457,7 @@
         "empty": "暂无注册的游戏开发者",
         "removeConfirmTitle": "确定要移除此开发者吗?",
         "removeConfirmDesc": "移除后，该开发者将无法再创建广告位",
+        "cannotRemoveWithAdSpaces": "该开发者下有广告位，无法移除",
         "notInList": "要移除的开发者不在列表中",
         "removing": "正在执行移除操作...",
         "removeSuccess": "游戏开发者移除成功！",

@@ -539,6 +539,20 @@ const ManagePage: React.FC = () => {
         return;
       }
 
+      // 检查该开发者是否有广告位
+      try {
+        const { getGameDevAdSpaces } = await import('../utils/tableUtils');
+        const adSpaces = await getGameDevAdSpaces(normalizedAddress);
+
+        if (adSpaces.length > 0) {
+          setError(t('manage.platformManage.registeredDevs.cannotRemoveWithAdSpaces'));
+          setLoading(false);
+          return;
+        }
+      } catch (checkError) {
+        console.warn('检查开发者广告位时出错，继续删除操作:', checkError);
+      }
+
       // 创建交易参数
       const params: RemoveGameDevParams = {
         factoryId: CONTRACT_CONFIG.FACTORY_OBJECT_ID,
@@ -761,6 +775,29 @@ const ManagePage: React.FC = () => {
     try {
       setDeleteLoading(true);
       setError(null);
+
+      // 首先检查广告位是否有活跃或待展示的NFT
+      if (account) {
+        try {
+          // 获取该广告位的所有NFT
+          const { getNFTsByAdSpace } = await import('../utils/tableUtils');
+          const { checkAdSpaceHasActiveNFTs } = await import('../utils/contract');
+          const nfts = await getNFTsByAdSpace(adSpaceId);
+
+          if (nfts.length > 0) {
+            // 检查是否有活跃或待展示的NFT
+            const hasActiveNFTs = await checkAdSpaceHasActiveNFTs(nfts);
+
+            if (hasActiveNFTs) {
+              setError(t('manage.myAdSpaces.cannotDeleteWithActiveNFTs'));
+              setDeleteLoading(false);
+              return;
+            }
+          }
+        } catch (checkError) {
+          console.warn('检查活跃NFT时出错，继续删除操作:', checkError);
+        }
+      }
 
       // 构建交易
       const txb = deleteAdSpaceTx({

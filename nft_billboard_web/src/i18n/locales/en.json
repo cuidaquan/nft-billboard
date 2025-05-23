@@ -403,7 +403,8 @@
       "refreshFailed": "Failed to refresh ad space list, please refresh the page manually",
       "deleteFailed": "Failed to delete ad space",
       "priceUpdateFailed": "Failed to update price",
-      "invalidPrice": "Please enter a valid price"
+      "invalidPrice": "Please enter a valid price",
+      "cannotDeleteWithActiveNFTs": "Cannot delete ad space with active or pending NFTs"
     },
     "registerDev": {
       "title": "Register Game Developer",
@@ -456,6 +457,7 @@
         "empty": "No registered game developers yet",
         "removeConfirmTitle": "Are you sure you want to remove this developer?",
         "removeConfirmDesc": "After removal, the developer will no longer be able to create ad spaces",
+        "cannotRemoveWithAdSpaces": "Cannot remove developer who has existing ad spaces",
         "notInList": "The developer to be removed is not in the list",
         "removing": "Executing removal operation...",
         "removeSuccess": "Game developer removed successfully!",

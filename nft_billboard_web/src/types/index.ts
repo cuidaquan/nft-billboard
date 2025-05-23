@@ -13,6 +13,7 @@ export interface AdSpace {
   owner: string | null;
   available: boolean;
   location: string; // 位置描述
+  creator?: string; // 新增：创建者地址
   isExample?: boolean; // 标记是否为示例数据
   price_description?: string; // 价格描述，说明价格的计算方式
   nft_ids?: string[]; // NFT ID列表
