@@ -111,18 +111,6 @@ export async function getUserNFTs(owner: string): Promise<BillboardNFT[]> {
 
     const client = createSuiClient();
 
-    // 从Factory对象中查询相关NFT信息
-    const factoryObject = await client.getObject({
-      id: CONTRACT_CONFIG.FACTORY_OBJECT_ID,
-      options: {
-        showContent: true,
-        showDisplay: true,
-        showType: true,
-      }
-    });
-
-    console.log(`[${requestId}] 获取到Factory对象:`, factoryObject.data?.objectId);
-
     // 构建NFT类型字符串，用于过滤
     const nftTypeStr = `${CONTRACT_CONFIG.PACKAGE_ID}::nft::AdBoardNFT`;
     console.log(`[${requestId}] 使用类型过滤:`, nftTypeStr);
@@ -200,107 +188,10 @@ export async function getUserNFTs(owner: string): Promise<BillboardNFT[]> {
         // 记录完整字段内容以便调试
         console.log(`[${requestId}] NFT字段详细内容:`, JSON.stringify(fields, null, 2));
 
-        // 提取广告位ID - 适配不同字段名称
-        let adSpaceId = '';
-        if (fields.ad_space_id) {
-          adSpaceId = typeof fields.ad_space_id === 'string' ? fields.ad_space_id :
-                    (fields.ad_space_id.id ? fields.ad_space_id.id : '');
-        } else if (fields.ad_space) {
-          // 适配可能的替代字段名称
-          adSpaceId = typeof fields.ad_space === 'string' ? fields.ad_space :
-                    (fields.ad_space.id ? fields.ad_space.id :
-                     (typeof fields.ad_space === 'object' ? JSON.stringify(fields.ad_space) : ''));
-        }
+        // 使用辅助函数构建NFT对象
+        const nft = buildBillboardNFTFromObject(nftObj, requestId);
 
-        console.log(`[${requestId}] 提取的广告位ID:`, adSpaceId);
-
-        // 提取到期时间 - 适配不同字段名称
-        let expiryTimestamp = 0;
-        if (fields.expiry_timestamp) {
-          expiryTimestamp = parseInt(fields.expiry_timestamp);
-        } else if (fields.expiry) {
-          expiryTimestamp = parseInt(fields.expiry);
-        } else if (fields.expire_timestamp) {
-          expiryTimestamp = parseInt(fields.expire_timestamp);
-        } else if (fields.lease_end) {
-          // 合约中使用的lease_end字段
-          expiryTimestamp = parseInt(fields.lease_end);
-        }
-
-        console.log(`[${requestId}] 提取的到期时间:`, expiryTimestamp);
-
-        // 提取创建时间 - 适配不同字段名称
-        let createdTimestamp = 0;
-        if (fields.created_timestamp) {
-          createdTimestamp = parseInt(fields.created_timestamp);
-        } else if (fields.created) {
-          createdTimestamp = parseInt(fields.created);
-        } else if (fields.create_timestamp) {
-          createdTimestamp = parseInt(fields.create_timestamp);
-        } else if (fields.lease_start) {
-          // 合约中使用的lease_start字段
-          createdTimestamp = parseInt(fields.lease_start);
-        }
-
-        console.log(`[${requestId}] 提取的创建时间:`, createdTimestamp);
-
-        // 提取其他字段 - 适配不同字段名称
-        const brandName = fields.brand_name || fields.brand || '';
-        const contentUrl = fields.content_url || fields.content || fields.url || '';
-        const projectUrl = fields.project_url || fields.project || fields.website || '';
-
-        console.log(`[${requestId}] 提取的品牌名称:`, brandName);
-        console.log(`[${requestId}] 提取的内容URL:`, contentUrl);
-        console.log(`[${requestId}] 提取的项目URL:`, projectUrl);
-
-        // 如果无法获取创建时间，使用当前时间减去30天作为默认值
-        if (createdTimestamp === 0) {
-          createdTimestamp = Math.floor((Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000);
-          console.log(`[${requestId}] 使用默认创建时间:`, createdTimestamp);
-        }
-
-        // 如果无法获取到期时间，使用当前时间加上30天作为默认值
-        if (expiryTimestamp === 0) {
-          expiryTimestamp = Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000);
-          console.log(`[${requestId}] 使用默认到期时间:`, expiryTimestamp);
-        }
-
-        // 计算租赁开始和结束日期
-        const now = Date.now();
-        const leaseStart = new Date(createdTimestamp * 1000).toISOString();
-        const leaseEnd = new Date(expiryTimestamp * 1000).toISOString();
-
-        // 判断NFT是否有效
-        const isActive = expiryTimestamp * 1000 > now;
-
-        // 计算NFT状态
-        const leaseStartTime = createdTimestamp * 1000;
-        const leaseEndTime = expiryTimestamp * 1000;
-        let status: NFTStatus;
-
-        if (now < leaseStartTime) {
-          status = NFTStatus.PENDING;  // 待展示
-        } else if (now >= leaseStartTime && now <= leaseEndTime) {
-          status = NFTStatus.ACTIVE;   // 活跃中
-        } else {
-          status = NFTStatus.EXPIRED;  // 已过期
-        }
-
-        // 构建NFT对象
-        const nft: BillboardNFT = {
-          id: nftObj.data.objectId,
-          adSpaceId: adSpaceId,
-          owner: owner,
-          brandName: brandName,
-          contentUrl: contentUrl,
-          projectUrl: projectUrl,
-          leaseStart: leaseStart,
-          leaseEnd: leaseEnd,
-          isActive: isActive,
-          status: status
-        };
-
-        console.log(`[${requestId}] 成功解析NFT:`, nftObj.data.objectId, 'adSpaceId:', adSpaceId);
+        console.log(`[${requestId}] 成功解析NFT:`, nftObj.data.objectId, 'adSpaceId:', nft.adSpaceId);
         nfts.push(nft);
       } catch (err) {
         console.error(`[${requestId}] 解析NFT时出错:`, nftObj.data?.objectId, err);
@@ -398,76 +289,12 @@ export async function getNFTDetails(nftId: string): Promise<BillboardNFT | null>
     console.log(`[${requestId}] NFT字段:`, Object.keys(fields || {}));
     console.log(`[${requestId}] NFT完整字段内容:`, JSON.stringify(fields, null, 2));
 
-    // 提取广告位ID
+    // 提取广告位ID用于获取关联信息
     let adSpaceId = '';
     if (fields.ad_space_id) {
       adSpaceId = typeof fields.ad_space_id === 'string' ? fields.ad_space_id :
                   (fields.ad_space_id.id ? fields.ad_space_id.id : '');
     }
-
-    // 提取所有者地址
-    let owner = '';
-    if (nftObject.data.owner && typeof nftObject.data.owner === 'object') {
-      const ownerObj = nftObject.data.owner as any;
-      owner = ownerObj.AddressOwner || ownerObj.ObjectOwner || '';
-      console.log(`[${requestId}] NFT所有者:`, owner);
-    }
-
-    // 提取品牌名称
-    const brandName = fields.brand_name || '';
-    console.log(`[${requestId}] 品牌名称:`, brandName);
-
-    // 提取内容URL
-    const contentUrl = fields.content_url || '';
-    console.log(`[${requestId}] 内容URL:`, contentUrl);
-
-    // 提取存储来源和blobId
-    const storageSource = fields.storage_source || '';
-    const blobId = fields.blob_id || '';
-    console.log(`[${requestId}] 存储来源:`, storageSource, '，Blob ID:', blobId);
-
-    // 提取项目URL
-    const projectUrl = fields.project_url || '';
-
-    // 提取租期时间
-    const leaseStart = fields.lease_start ? Number(fields.lease_start) * 1000 : Date.now();
-    const leaseEnd = fields.lease_end ? Number(fields.lease_end) * 1000 : (Date.now() + 30 * 24 * 60 * 60 * 1000);
-
-    console.log(`[${requestId}] 租期:`, {
-      start: new Date(leaseStart).toLocaleString(),
-      end: new Date(leaseEnd).toLocaleString()
-    });
-
-    // 判断NFT是否有效/活跃
-    const isActive = leaseEnd > Date.now() && (fields.is_active === true || fields.is_active === undefined);
-    console.log(`[${requestId}] NFT是否活跃:`, isActive ? "是" : "否");
-
-    // 计算NFT状态
-    const now = Date.now();
-    let status: NFTStatus;
-
-    if (now < leaseStart) {
-      status = NFTStatus.PENDING;  // 待展示
-    } else if (now >= leaseStart && now <= leaseEnd) {
-      status = NFTStatus.ACTIVE;   // 活跃中
-    } else {
-      status = NFTStatus.EXPIRED;  // 已过期
-    }
-
-    console.log(`[${requestId}] NFT状态:`, status);
-
-    // 提取价格信息
-    const price = fields.price || fields.amount || '';
-
-    // 提取创建时间/最后续约时间
-    const creationTime = fields.creation_time ? new Date(Number(fields.creation_time) * 1000).toISOString() :
-                        new Date(leaseStart).toISOString();
-
-    const lastRenewalTime = fields.last_renewal_time ? new Date(Number(fields.last_renewal_time) * 1000).toISOString() :
-                           fields.renewal_time ? new Date(Number(fields.renewal_time) * 1000).toISOString() : undefined;
-
-    // 提取初始创建者地址
-    const originalOwner = fields.original_owner || fields.creator || '';
 
     // 尝试获取关联的广告位信息
     let gameId = '';
@@ -487,28 +314,12 @@ export async function getNFTDetails(nftId: string): Promise<BillboardNFT | null>
       }
     }
 
-    // 构建NFT对象
-    const nft: BillboardNFT = {
-      id: nftId,
-      adSpaceId,
-      owner,
-      brandName,
-      contentUrl,
-      projectUrl,
-      leaseStart: new Date(leaseStart).toISOString(),
-      leaseEnd: new Date(leaseEnd).toISOString(),
-      isActive,
-      status,
-      creationTime,
-      lastRenewalTime,
-      price,
-      originalOwner,
+    // 使用辅助函数构建NFT对象，传入额外字段
+    const nft = buildBillboardNFTFromObject(nftObject, requestId, {
       size,
       gameId,
-      location,
-      storageSource: storageSource as 'walrus' | 'external' | undefined,
-      blobId
-    };
+      location
+    });
 
     console.log(`[${requestId}] 成功解析NFT: ${nftId}`);
     return nft;
@@ -813,6 +624,157 @@ export async function updateNFTContent(params: UpdateNFTContentParams): Promise<
     console.error('更新NFT内容失败:', error);
     return false;
   }
+}
+
+// 辅助函数：从NFT对象构建BillboardNFT对象
+function buildBillboardNFTFromObject(
+  nftObject: any,
+  requestId?: string,
+  extraFields?: {
+    size?: { width: number; height: number };
+    gameId?: string;
+    location?: string;
+  }
+): BillboardNFT {
+  const logPrefix = requestId ? `[${requestId}]` : '';
+
+  // 提取基本信息
+  const nftId = nftObject.data.objectId;
+  const fields = nftObject.data.content.fields;
+
+  // 提取所有者地址
+  let owner = '';
+  if (nftObject.data.owner && typeof nftObject.data.owner === 'object') {
+    const ownerObj = nftObject.data.owner as any;
+    owner = ownerObj.AddressOwner || ownerObj.ObjectOwner || '';
+  }
+
+  // 提取广告位ID - 适配不同字段名称
+  let adSpaceId = '';
+  if (fields.ad_space_id) {
+    adSpaceId = typeof fields.ad_space_id === 'string' ? fields.ad_space_id :
+              (fields.ad_space_id.id ? fields.ad_space_id.id : '');
+  } else if (fields.ad_space) {
+    // 适配可能的替代字段名称
+    adSpaceId = typeof fields.ad_space === 'string' ? fields.ad_space :
+              (fields.ad_space.id ? fields.ad_space.id :
+               (typeof fields.ad_space === 'object' ? JSON.stringify(fields.ad_space) : ''));
+  }
+
+  console.log(`${logPrefix} 提取的广告位ID:`, adSpaceId);
+
+  // 提取到期时间 - 适配不同字段名称
+  let expiryTimestamp = 0;
+  if (fields.expiry_timestamp) {
+    expiryTimestamp = parseInt(fields.expiry_timestamp);
+  } else if (fields.expiry) {
+    expiryTimestamp = parseInt(fields.expiry);
+  } else if (fields.expire_timestamp) {
+    expiryTimestamp = parseInt(fields.expire_timestamp);
+  } else if (fields.lease_end) {
+    // 合约中使用的lease_end字段
+    expiryTimestamp = parseInt(fields.lease_end);
+  }
+
+  console.log(`${logPrefix} 提取的到期时间:`, expiryTimestamp);
+
+  // 提取创建时间 - 适配不同字段名称
+  let createdTimestamp = 0;
+  if (fields.created_timestamp) {
+    createdTimestamp = parseInt(fields.created_timestamp);
+  } else if (fields.created) {
+    createdTimestamp = parseInt(fields.created);
+  } else if (fields.create_timestamp) {
+    createdTimestamp = parseInt(fields.create_timestamp);
+  } else if (fields.lease_start) {
+    // 合约中使用的lease_start字段
+    createdTimestamp = parseInt(fields.lease_start);
+  }
+
+  console.log(`${logPrefix} 提取的创建时间:`, createdTimestamp);
+
+  // 提取其他字段 - 适配不同字段名称
+  const brandName = fields.brand_name || fields.brand || '';
+  const contentUrl = fields.content_url || fields.content || fields.url || '';
+  const projectUrl = fields.project_url || fields.project || fields.website || '';
+  const storageSource = fields.storage_source || '';
+  const blobId = fields.blob_id || '';
+  const price = fields.price || fields.amount || '';
+
+  console.log(`${logPrefix} 提取的品牌名称:`, brandName);
+  console.log(`${logPrefix} 提取的内容URL:`, contentUrl);
+  console.log(`${logPrefix} 提取的项目URL:`, projectUrl);
+  console.log(`${logPrefix} 提取的存储来源:`, storageSource, '，Blob ID:', blobId);
+
+  // 如果无法获取创建时间，使用当前时间减去30天作为默认值
+  if (createdTimestamp === 0) {
+    createdTimestamp = Math.floor((Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000);
+    console.log(`${logPrefix} 使用默认创建时间:`, createdTimestamp);
+  }
+
+  // 如果无法获取到期时间，使用当前时间加上30天作为默认值
+  if (expiryTimestamp === 0) {
+    expiryTimestamp = Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000);
+    console.log(`${logPrefix} 使用默认到期时间:`, expiryTimestamp);
+  }
+
+  // 计算租赁开始和结束日期
+  const now = Date.now();
+  const leaseStart = new Date(createdTimestamp * 1000).toISOString();
+  const leaseEnd = new Date(expiryTimestamp * 1000).toISOString();
+
+  // 判断NFT是否有效
+  const isActive = expiryTimestamp * 1000 > now;
+
+  // 计算NFT状态
+  const leaseStartTime = createdTimestamp * 1000;
+  const leaseEndTime = expiryTimestamp * 1000;
+  let status: NFTStatus;
+
+  if (now < leaseStartTime) {
+    status = NFTStatus.PENDING;  // 待展示
+  } else if (now >= leaseStartTime && now <= leaseEndTime) {
+    status = NFTStatus.ACTIVE;   // 活跃中
+  } else {
+    status = NFTStatus.EXPIRED;  // 已过期
+  }
+
+  // 提取创建时间/最后续约时间
+  const creationTime = fields.creation_time ? new Date(Number(fields.creation_time) * 1000).toISOString() :
+                      new Date(leaseStartTime).toISOString();
+
+  const lastRenewalTime = fields.last_renewal_time ? new Date(Number(fields.last_renewal_time) * 1000).toISOString() :
+                         fields.renewal_time ? new Date(Number(fields.renewal_time) * 1000).toISOString() : undefined;
+
+  // 提取初始创建者地址
+  const originalOwner = fields.original_owner || fields.creator || '';
+
+  // 构建NFT对象
+  const nft: BillboardNFT = {
+    id: nftId,
+    adSpaceId,
+    owner: owner || '',
+    brandName,
+    contentUrl,
+    projectUrl,
+    leaseStart,
+    leaseEnd,
+    isActive,
+    status,
+    creationTime,
+    lastRenewalTime,
+    price,
+    originalOwner,
+    storageSource: storageSource as 'walrus' | 'external' | undefined,
+    blobId,
+    // 添加额外字段（如果提供）
+    ...(extraFields?.size && { size: extraFields.size }),
+    ...(extraFields?.gameId && { gameId: extraFields.gameId }),
+    ...(extraFields?.location && { location: extraFields.location })
+  };
+
+  console.log(`${logPrefix} 成功构建NFT对象:`, nftId);
+  return nft;
 }
 
 // 辅助函数：详细比较两个地址
