@@ -1,13 +1,9 @@
 import { Transaction } from '@mysten/sui/transactions';
 import { SuiClient, PaginatedObjectsResponse } from '@mysten/sui/client';
-import { CONTRACT_CONFIG, NETWORKS, DEFAULT_NETWORK, USE_MOCK_DATA } from '../config/config';
+import { CONTRACT_CONFIG, NETWORKS, DEFAULT_NETWORK } from '../config/config';
 import { BillboardNFT, AdSpace, PurchaseAdSpaceParams, UpdateNFTContentParams, RenewNFTParams, CreateAdSpaceParams, RemoveGameDevParams } from '../types';
 
-// 模拟的游戏开发者列表（仅用于测试）
-export const MOCK_GAME_DEVS: string[] = [
-  '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-  '0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321'
-];
+
 
 // 创建 SUI 客户端
 export const createSuiClient = (network = DEFAULT_NETWORK) => {
@@ -16,45 +12,6 @@ export const createSuiClient = (network = DEFAULT_NETWORK) => {
 
 // 获取所有可用的广告位
 export async function getAvailableAdSpaces(): Promise<AdSpace[]> {
-  // 如果使用模拟数据，返回模拟的广告位
-  if (USE_MOCK_DATA) {
-    console.log('使用模拟广告位数据');
-    // 模拟数据
-    const mockAdSpaces: AdSpace[] = [
-      {
-        id: '0x123',
-        name: '首页顶部广告位',
-        description: '网站首页顶部横幅广告位，高曝光量',
-        imageUrl: 'https://example.com/ad-space-1.jpg',
-        price: '100000000', // 0.1 SUI
-        duration: 30, // 30天
-        dimension: {
-          width: 1200,
-          height: 300,
-        },
-        owner: null,
-        available: true,
-        location: '首页顶部',
-      },
-      {
-        id: '0x456',
-        name: '侧边栏广告位',
-        description: '网站所有页面侧边栏广告位',
-        imageUrl: 'https://example.com/ad-space-2.jpg',
-        price: '50000000', // 0.05 SUI
-        duration: 30, // 30天
-        dimension: {
-          width: 300,
-          height: 600,
-        },
-        owner: null,
-        available: true,
-        location: '所有页面侧边栏',
-      },
-    ];
-
-    return mockAdSpaces;
-  }
 
   // 实际从链上获取数据
   try {
@@ -138,26 +95,6 @@ export async function getAvailableAdSpaces(): Promise<AdSpace[]> {
 }
 
 export async function getUserNFTs(owner: string): Promise<BillboardNFT[]> {
-  // 如果使用模拟数据，返回模拟的NFT
-  if (USE_MOCK_DATA) {
-    console.log('使用模拟NFT数据');
-    // 模拟数据
-    const mockNFTs: BillboardNFT[] = [
-      {
-        id: '0x789',
-        adSpaceId: '0x123',
-        owner: owner,
-        brandName: '示例品牌',
-        contentUrl: 'https://example.com/ad-content-1.jpg',
-        projectUrl: 'https://example.com',
-        leaseStart: new Date(Date.now() - 86400000 * 10).toISOString(), // 10天前
-        leaseEnd: new Date(Date.now() + 86400000 * 20).toISOString(), // 20天后
-        isActive: true
-      }
-    ];
-
-    return mockNFTs;
-  }
 
   // 实际从链上获取数据
   try {
@@ -366,49 +303,6 @@ export async function getUserNFTs(owner: string): Promise<BillboardNFT[]> {
 
 // 获取单个广告位详情
 export async function getAdSpaceDetails(adSpaceId: string): Promise<AdSpace | null> {
-  // 如果使用模拟数据，返回模拟的广告位详情
-  if (USE_MOCK_DATA) {
-    console.log('使用模拟广告位详情数据');
-    // 模拟获取数据的延迟
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // 根据ID返回不同的模拟数据
-    if (adSpaceId === '0x123') {
-      return {
-        id: '0x123',
-        name: '首页顶部广告位',
-        description: '网站首页顶部横幅广告位，高曝光量',
-        imageUrl: 'https://example.com/ad-space-1.jpg',
-        price: '100000000', // 0.1 SUI
-        duration: 30, // 30天
-        dimension: {
-          width: 1200,
-          height: 300,
-        },
-        owner: null,
-        available: true,
-        location: '首页顶部',
-      };
-    } else if (adSpaceId === '0x456') {
-      return {
-        id: '0x456',
-        name: '侧边栏广告位',
-        description: '网站所有页面侧边栏广告位',
-        imageUrl: 'https://example.com/ad-space-2.jpg',
-        price: '50000000', // 0.05 SUI
-        duration: 30, // 30天
-        dimension: {
-          width: 300,
-          height: 600,
-        },
-        owner: null,
-        available: true,
-        location: '所有页面侧边栏',
-      };
-    }
-
-    return null;
-  }
 
   // 实际从链上获取数据
   try {
@@ -430,29 +324,6 @@ export async function getAdSpaceDetails(adSpaceId: string): Promise<AdSpace | nu
 
 // 获取单个NFT详情
 export async function getNFTDetails(nftId: string): Promise<BillboardNFT | null> {
-  // 如果使用模拟数据，返回模拟的NFT详情
-  if (USE_MOCK_DATA) {
-    console.log('使用模拟NFT详情数据');
-    // 模拟获取数据的延迟
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // 根据ID返回不同的模拟数据
-    if (nftId === '0x789') {
-      return {
-        id: nftId,
-        adSpaceId: '0x123',
-        owner: '0x456',
-        brandName: '示例品牌',
-        contentUrl: 'https://example.com/ad-content-1.jpg',
-        projectUrl: 'https://example.com',
-        leaseStart: new Date(Date.now() - 86400000 * 10).toISOString(), // 10天前
-        leaseEnd: new Date(Date.now() + 86400000 * 20).toISOString(), // 20天后
-        isActive: true
-      };
-    }
-
-    return null;
-  }
 
   // 实际从链上获取数据
   try {
@@ -622,11 +493,6 @@ export async function getNFTDetails(nftId: string): Promise<BillboardNFT | null>
 export function createPurchaseAdSpaceTx(params: PurchaseAdSpaceParams): Transaction {
   const tx = new Transaction();
 
-  if (USE_MOCK_DATA) {
-    console.log('使用模拟交易数据');
-    return tx;
-  }
-
   console.log('构建购买广告位交易', params);
 
   // 获取Clock对象
@@ -667,11 +533,6 @@ export function createPurchaseAdSpaceTx(params: PurchaseAdSpaceParams): Transact
 export function createUpdateAdContentTx(params: UpdateNFTContentParams): Transaction {
   const tx = new Transaction();
 
-  if (USE_MOCK_DATA) {
-    console.log('使用模拟交易数据');
-    return tx;
-  }
-
   console.log('构建更新广告内容交易');
 
   // 准备blob_id参数
@@ -698,11 +559,6 @@ export function createUpdateAdContentTx(params: UpdateNFTContentParams): Transac
 // 创建续租交易
 export function createRenewLeaseTx(params: RenewNFTParams): Transaction {
   const tx = new Transaction();
-
-  if (USE_MOCK_DATA) {
-    console.log('使用模拟交易数据');
-    return tx;
-  }
 
   console.log('构建续租交易，参数:', params);
 
@@ -737,11 +593,6 @@ export function createRenewLeaseTx(params: RenewNFTParams): Transaction {
 // 创建广告位的交易
 export function createAdSpaceTx(params: CreateAdSpaceParams): Transaction {
   const tx = new Transaction();
-
-  if (USE_MOCK_DATA) {
-    console.log('使用模拟交易数据');
-    return tx;
-  }
 
   // 获取必要的对象
   const factoryObj = tx.object(CONTRACT_CONFIG.FACTORY_OBJECT_ID);
@@ -816,12 +667,6 @@ export function updateAdSpacePriceTx(params: { adSpaceId: string, price: string 
 
 // 计算广告位租赁价格
 export async function calculateLeasePrice(adSpaceId: string, leaseDays: number): Promise<string> {
-  if (USE_MOCK_DATA) {
-    console.log('使用模拟价格计算');
-    // 模拟价格计算 (仅测试用)
-    const mockPrice = 100000000 * leaseDays; // 0.1 SUI * 天数
-    return mockPrice.toString();
-  }
 
   console.log('计算广告位租赁价格，广告位ID:', adSpaceId, '租赁天数:', leaseDays);
 
@@ -977,11 +822,6 @@ export function compareAddresses(address1: string, address2: string): boolean {
 export async function getGameDevsFromFactory(factoryId: string): Promise<string[]> {
   console.log('获取工厂中的游戏开发者列表, 工厂ID:', factoryId);
 
-  if (USE_MOCK_DATA) {
-    console.log('使用模拟游戏开发者数据');
-    return MOCK_GAME_DEVS;
-  }
-
   try {
     // 导入getAllGameDevs函数
     const { getAllGameDevs } = await import('./tableUtils');
@@ -1001,11 +841,6 @@ export async function getGameDevsFromFactory(factoryId: string): Promise<string[
 // 获取平台分成比例
 export async function getPlatformRatio(factoryId: string): Promise<number> {
   console.log('获取平台分成比例, 工厂ID:', factoryId);
-
-  if (USE_MOCK_DATA) {
-    console.log('使用模拟平台分成比例数据');
-    return 10; // 模拟分成比例为10%
-  }
 
   try {
     const suiClient = createSuiClient();
@@ -1176,44 +1011,6 @@ export async function getAdSpaceById(adSpaceId: string): Promise<AdSpace | null>
 
 // 获取游戏开发者创建的广告位列表
 export async function getCreatedAdSpaces(developerAddress: string): Promise<AdSpace[]> {
-  // 如果使用模拟数据，返回模拟的广告位
-  if (USE_MOCK_DATA) {
-    console.log('使用模拟广告位数据');
-    // 使用与getAvailableAdSpaces相同的模拟数据
-    const mockAdSpaces: AdSpace[] = [
-      {
-        id: '0x123',
-        name: '首页顶部广告位',
-        description: '网站首页顶部横幅广告位，高曝光量',
-        imageUrl: 'https://example.com/ad-space-1.jpg',
-        price: '100000000', // 0.1 SUI
-        duration: 30, // 30天
-        dimension: {
-          width: 1200,
-          height: 300,
-        },
-        owner: null,
-        available: true,
-        location: '首页顶部',
-      },
-      {
-        id: '0x456',
-        name: '侧边栏广告位',
-        description: '网站所有页面侧边栏广告位',
-        imageUrl: 'https://example.com/ad-space-2.jpg',
-        price: '50000000', // 0.05 SUI
-        duration: 30, // 30天
-        dimension: {
-          width: 300,
-          height: 600,
-        },
-        owner: null,
-        available: true,
-        location: '所有页面侧边栏',
-      },
-    ];
-    return mockAdSpaces;
-  }
 
   // 实际从链上获取数据
   try {

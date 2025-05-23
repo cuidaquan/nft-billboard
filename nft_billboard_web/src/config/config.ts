@@ -84,8 +84,3 @@ export const API_CONFIG = {
   TIMEOUT: Number(process.env.REACT_APP_API_TIMEOUT || 30000),
 };
 
-/**
- * 是否使用模拟数据
- * 开发阶段可以设置为true，使用模拟数据而不是实际调用链上合约
- */
-export const USE_MOCK_DATA = process.env.REACT_APP_USE_MOCK_DATA === 'true';

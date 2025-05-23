@@ -123,13 +123,6 @@ export const getApiTimeout = (): number => {
   return parseInt(process.env.REACT_APP_API_TIMEOUT || '30000', 10);
 };
 
-/**
- * 检查是否使用模拟数据
- * @returns 是否使用模拟数据
- */
-export const useMockData = (): boolean => {
-  return process.env.REACT_APP_USE_MOCK_DATA === 'true';
-};
 
 /**
  * 环境配置
@@ -148,7 +141,7 @@ const env = {
   getWalrusEnvironment,
   getWalrusAggregatorUrl,
   getApiTimeout,
-  useMockData,
+
 };
 
 export default env;
