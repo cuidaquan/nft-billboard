@@ -122,6 +122,14 @@
       "myAdSpace": "我的广告位",
       "myNFT": "我的NFT"
     },
+    "nftStats": {
+      "title": "NFT统计",
+      "active": "活跃",
+      "pending": "待展示",
+      "expired": "过期",
+      "total": "总计",
+      "count": "个"
+    },
     "buttons": {
       "viewDetails": "查看详情",
       "buyNow": "立即购买",

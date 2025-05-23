@@ -72,6 +72,7 @@ export interface BillboardNFT {
   leaseStart: string;
   leaseEnd: string;
   isActive: boolean;
+  status: NFTStatus;         // 新增：NFT状态（活跃中、待展示、已过期）
   blobId?: string;           // 新增：Walrus中的blob ID
   storageSource?: 'walrus' | 'external'; // 新增：存储来源
   creationTime?: string; // 创建时间
@@ -95,6 +96,21 @@ export enum UserRole {
   GAME_DEV = 'GAME_DEV',
   USER = 'USER',
   OWNER = 'OWNER'
+}
+
+// NFT状态枚举
+export enum NFTStatus {
+  ACTIVE = 'active',      // 活跃中：当前时间在租期内
+  PENDING = 'pending',    // 待展示：当前时间在租期开始之前
+  EXPIRED = 'expired'     // 已过期：当前时间在租期结束之后
+}
+
+// NFT统计信息接口
+export interface NFTStats {
+  active: number;    // 活跃NFT个数
+  pending: number;   // 待展示NFT个数
+  expired: number;   // 过期NFT个数
+  total: number;     // 总NFT个数
 }
 
 export interface User {

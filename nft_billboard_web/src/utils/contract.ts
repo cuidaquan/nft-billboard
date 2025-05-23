@@ -1,7 +1,7 @@
 import { Transaction } from '@mysten/sui/transactions';
 import { SuiClient, PaginatedObjectsResponse } from '@mysten/sui/client';
 import { CONTRACT_CONFIG, NETWORKS, DEFAULT_NETWORK } from '../config/config';
-import { BillboardNFT, AdSpace, PurchaseAdSpaceParams, UpdateNFTContentParams, RenewNFTParams, CreateAdSpaceParams, RemoveGameDevParams } from '../types';
+import { BillboardNFT, AdSpace, PurchaseAdSpaceParams, UpdateNFTContentParams, RenewNFTParams, CreateAdSpaceParams, RemoveGameDevParams, NFTStatus } from '../types';
 
 
 
@@ -273,6 +273,19 @@ export async function getUserNFTs(owner: string): Promise<BillboardNFT[]> {
         // 判断NFT是否有效
         const isActive = expiryTimestamp * 1000 > now;
 
+        // 计算NFT状态
+        const leaseStartTime = createdTimestamp * 1000;
+        const leaseEndTime = expiryTimestamp * 1000;
+        let status: NFTStatus;
+
+        if (now < leaseStartTime) {
+          status = NFTStatus.PENDING;  // 待展示
+        } else if (now >= leaseStartTime && now <= leaseEndTime) {
+          status = NFTStatus.ACTIVE;   // 活跃中
+        } else {
+          status = NFTStatus.EXPIRED;  // 已过期
+        }
+
         // 构建NFT对象
         const nft: BillboardNFT = {
           id: nftObj.data.objectId,
@@ -283,7 +296,8 @@ export async function getUserNFTs(owner: string): Promise<BillboardNFT[]> {
           projectUrl: projectUrl,
           leaseStart: leaseStart,
           leaseEnd: leaseEnd,
-          isActive: isActive
+          isActive: isActive,
+          status: status
         };
 
         console.log(`[${requestId}] 成功解析NFT:`, nftObj.data.objectId, 'adSpaceId:', adSpaceId);
@@ -428,6 +442,20 @@ export async function getNFTDetails(nftId: string): Promise<BillboardNFT | null>
     const isActive = leaseEnd > Date.now() && (fields.is_active === true || fields.is_active === undefined);
     console.log(`[${requestId}] NFT是否活跃:`, isActive ? "是" : "否");
 
+    // 计算NFT状态
+    const now = Date.now();
+    let status: NFTStatus;
+
+    if (now < leaseStart) {
+      status = NFTStatus.PENDING;  // 待展示
+    } else if (now >= leaseStart && now <= leaseEnd) {
+      status = NFTStatus.ACTIVE;   // 活跃中
+    } else {
+      status = NFTStatus.EXPIRED;  // 已过期
+    }
+
+    console.log(`[${requestId}] NFT状态:`, status);
+
     // 提取价格信息
     const price = fields.price || fields.amount || '';
 
@@ -470,6 +498,7 @@ export async function getNFTDetails(nftId: string): Promise<BillboardNFT | null>
       leaseStart: new Date(leaseStart).toISOString(),
       leaseEnd: new Date(leaseEnd).toISOString(),
       isActive,
+      status,
       creationTime,
       lastRenewalTime,
       price,
@@ -1261,3 +1290,4 @@ export async function checkAdSpaceHasActiveNFTs(nftIds: string[]): Promise<boole
     return true;
   }
 }
+

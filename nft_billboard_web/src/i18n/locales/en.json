@@ -122,6 +122,14 @@
       "myAdSpace": "My Ad Space",
       "myNFT": "My NFT"
     },
+    "nftStats": {
+      "title": "NFT Statistics",
+      "active": "Active",
+      "pending": "Pending",
+      "expired": "Expired",
+      "total": "Total",
+      "count": ""
+    },
     "buttons": {
       "viewDetails": "View Details",
       "buyNow": "Buy Now",
