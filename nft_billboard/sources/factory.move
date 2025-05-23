@@ -11,6 +11,7 @@ module nft_billboard::factory {
     const EInvalidPlatformRatio: u64 = 2;
     const EGameDevNotFound: u64 = 3;
     const EAdSpaceNotFound: u64 = 4;
+    const EGameDevHasAdSpaces: u64 = 6;
 
 
 
@@ -19,7 +20,7 @@ module nft_billboard::factory {
         id: UID,
         admin: address,
         ad_spaces: Table<ID, vector<ID>>,  // 使用广告位ID作为key，值为NFT ID列表
-        game_devs: Table<address, bool>,   // 使用地址作为key，值为bool表示存在
+        game_devs: Table<address, vector<ID>>,   // 使用地址作为key，值为该开发者创建的广告位ID列表
         platform_ratio: u8   // 平台分成比例，百分比
     }
 
@@ -59,7 +60,7 @@ module nft_billboard::factory {
             id: object::new(ctx),
             admin: tx_context::sender(ctx),
             ad_spaces: table::new<ID, vector<ID>>(ctx),
-            game_devs: table::new<address, bool>(ctx),
+            game_devs: table::new<address, vector<ID>>(ctx),
             platform_ratio: DEFAULT_PLATFORM_RATIO
         };
 
@@ -77,8 +78,15 @@ module nft_billboard::factory {
         ad_space_id: ID,
         creator: address
     ) {
-        // 添加到Table中
+        // 检查开发者是否已注册，如果未注册则报错
+        assert!(table::contains(&factory.game_devs, creator), EGameDevNotFound);
+
+        // 添加到广告位Table中
         table::add(&mut factory.ad_spaces, ad_space_id, vector::empty<ID>());
+
+        // 将广告位ID添加到开发者的广告位列表中
+        let ad_space_list = table::borrow_mut(&mut factory.game_devs, creator);
+        vector::push_back(ad_space_list, ad_space_id);
 
         event::emit(AdSpaceRegistered {
             ad_space_id,
@@ -103,8 +111,8 @@ module nft_billboard::factory {
             return
         };
 
-        // 添加到Table中
-        table::add(&mut factory.game_devs, game_dev, true);
+        // 添加到Table中，初始化为空的广告位列表
+        table::add(&mut factory.game_devs, game_dev, vector::empty<ID>());
     }
 
     // 移除游戏开发者
@@ -114,6 +122,10 @@ module nft_billboard::factory {
 
         // 确保开发者存在
         assert!(table::contains(&factory.game_devs, game_dev), EGameDevNotFound);
+
+        // 检查该开发者是否有广告位，如果有则不能删除
+        let ad_space_list = table::borrow(&factory.game_devs, game_dev);
+        assert!(vector::is_empty(ad_space_list), EGameDevHasAdSpaces);
 
         // 移除开发者
         table::remove(&mut factory.game_devs, game_dev);
@@ -162,17 +174,24 @@ module nft_billboard::factory {
     public fun remove_ad_space(
         factory: &mut Factory,
         ad_space_id: ID,
+        creator: address,
         ctx: &mut TxContext
     ) {
         // 确保广告位存在
         assert!(table::contains(&factory.ad_spaces, ad_space_id), EAdSpaceNotFound);
 
-        // 注意：这里需要从AdSpace对象中获取创建者信息
-        // 在实际使用时，应该传入AdSpace对象或使用ad_space::get_creator函数
-        // 这里假设调用者已经验证了权限
 
-        // 移除广告位
+        // 从广告位Table中移除
         table::remove(&mut factory.ad_spaces, ad_space_id);
+
+        // 从开发者的广告位列表中移除
+        if (table::contains(&factory.game_devs, creator)) {
+            let ad_space_list = table::borrow_mut(&mut factory.game_devs, creator);
+            let (found, index) = vector::index_of(ad_space_list, &ad_space_id);
+            if (found) {
+                vector::remove(ad_space_list, index);
+            };
+        };
 
         // 发送事件
         event::emit(AdSpaceRemoved {
@@ -195,5 +214,5 @@ module nft_billboard::factory {
         vector::push_back(nft_ids, nft_id);
     }
 
-
+    
 }

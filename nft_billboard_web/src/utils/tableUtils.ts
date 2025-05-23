@@ -1,4 +1,5 @@
 import { createSuiClient } from './contract';
+import { CONTRACT_CONFIG } from '../config/config';
 import { AdSpace } from '../types';
 import { PaginatedDynamicFieldInfos } from '@mysten/sui/client';
 
@@ -239,7 +240,10 @@ export async function getAllAdSpaces(factoryId: string): Promise<AdSpace[]> {
 
         if (adSpace) {
           // 获取广告位对应的NFT ID列表
-          const nftIdsData = await getTableValue(adSpacesTableId, adSpaceId);
+          const nftIdsData = await getTableValue(adSpacesTableId, {
+            type: '0x2::object::ID',
+            value: adSpaceId
+          });
           console.log(`广告位 ${adSpaceId} 的NFT ID列表原始数据:`, nftIdsData);
 
           // 处理NFT ID列表
@@ -294,6 +298,154 @@ export async function getAllAdSpaces(factoryId: string): Promise<AdSpace[]> {
     return validAdSpaces;
   } catch (error) {
     console.error('获取所有广告位失败:', error);
+    return [];
+  }
+}
+
+/**
+ * 获取广告位的NFT列表（从Factory的ad_spaces字段获取）
+ * @param adSpaceId 广告位ID
+ * @returns NFT ID列表
+ */
+export async function getNFTsByAdSpace(adSpaceId: string): Promise<string[]> {
+  try {
+    console.log('从Factory对象的ad_spaces字段获取广告位的NFT列表，广告位ID:', adSpaceId);
+
+    if (!adSpaceId || !adSpaceId.startsWith('0x')) {
+      console.error('广告位ID无效:', adSpaceId);
+      return [];
+    }
+
+    // 生成一个唯一的请求ID，用于日志跟踪
+    const requestId = new Date().getTime().toString();
+    console.log(`[${requestId}] 开始从Factory获取广告位的NFT列表`);
+
+    const client = createSuiClient();
+
+    // 首先获取Factory对象
+    const factoryObj = await client.getObject({
+      id: CONTRACT_CONFIG.FACTORY_OBJECT_ID,
+      options: { showContent: true, showType: true }
+    });
+
+    if (!factoryObj.data || !factoryObj.data.content || factoryObj.data.content.dataType !== 'moveObject') {
+      console.error(`[${requestId}] 无法获取Factory对象`);
+      return [];
+    }
+
+    const factoryContent = factoryObj.data.content as { dataType: 'moveObject', fields: Record<string, any> };
+    const factoryFields = factoryContent.fields;
+
+    console.log(`[${requestId}] Factory对象字段:`, Object.keys(factoryFields));
+
+    // 获取ad_spaces字段
+    const adSpacesField = factoryFields.ad_spaces;
+    if (!adSpacesField || !adSpacesField.fields || !adSpacesField.fields.id) {
+      console.log(`[${requestId}] Factory中没有ad_spaces字段或字段为空`);
+      return [];
+    }
+
+    // 使用getTableValue获取广告位的NFT列表
+    let nftIds: string[] = [];
+    try {
+      const nftList = await getTableValue(adSpacesField.fields.id.id, {
+        type: '0x2::object::ID',
+        value: adSpaceId
+      });
+
+      console.log(`[${requestId}] 从Table获取到的NFT列表:`, nftList);
+
+      if (Array.isArray(nftList)) {
+        nftIds = nftList.map(id => typeof id === 'string' ? id : id.toString());
+      } else if (nftList && typeof nftList === 'object') {
+        // 处理可能的其他格式
+        console.log(`[${requestId}] NFT列表格式:`, nftList);
+        // 如果返回的是对象，可能需要进一步处理
+        nftIds = [];
+      }
+    } catch (error) {
+      console.log(`[${requestId}] 广告位 ${adSpaceId} 不在ad_spaces列表中或没有NFT:`, error);
+      return [];
+    }
+
+    console.log(`[${requestId}] 从Factory获取到广告位的NFT ID列表:`, nftIds);
+    return nftIds;
+  } catch (error) {
+    console.error('获取广告位NFT列表失败:', error);
+    return [];
+  }
+}
+
+/**
+ * 获取开发者的广告位列表（从Factory的game_devs字段获取）
+ * @param developerAddress 开发者地址
+ * @returns 广告位ID列表
+ */
+export async function getGameDevAdSpaces(developerAddress: string): Promise<string[]> {
+  try {
+    console.log('从Factory对象的game_devs字段获取开发者的广告位ID列表，开发者地址:', developerAddress);
+
+    if (!developerAddress || !developerAddress.startsWith('0x')) {
+      console.error('开发者地址无效:', developerAddress);
+      return [];
+    }
+
+    // 生成一个唯一的请求ID，用于日志跟踪
+    const requestId = new Date().getTime().toString();
+    console.log(`[${requestId}] 开始从Factory获取开发者的广告位ID列表`);
+
+    const client = createSuiClient();
+
+    // 首先获取Factory对象
+    const factoryObj = await client.getObject({
+      id: CONTRACT_CONFIG.FACTORY_OBJECT_ID,
+      options: { showContent: true, showType: true }
+    });
+
+    if (!factoryObj.data || !factoryObj.data.content || factoryObj.data.content.dataType !== 'moveObject') {
+      console.error(`[${requestId}] 无法获取Factory对象`);
+      return [];
+    }
+
+    const factoryContent = factoryObj.data.content as { dataType: 'moveObject', fields: Record<string, any> };
+    const factoryFields = factoryContent.fields;
+
+    console.log(`[${requestId}] Factory对象字段:`, Object.keys(factoryFields));
+
+    // 获取game_devs字段
+    const gameDevsField = factoryFields.game_devs;
+    if (!gameDevsField || !gameDevsField.fields || !gameDevsField.fields.id) {
+      console.log(`[${requestId}] Factory中没有game_devs字段或字段为空`);
+      return [];
+    }
+
+    // 使用getTableValue获取开发者的广告位列表
+    let adSpaceIds: string[] = [];
+    try {
+      const adSpaceList = await getTableValue(gameDevsField.fields.id.id, {
+        type: 'address',
+        value: developerAddress
+      });
+
+      console.log(`[${requestId}] 从Table获取到的广告位列表:`, adSpaceList);
+
+      if (Array.isArray(adSpaceList)) {
+        adSpaceIds = adSpaceList.map(id => typeof id === 'string' ? id : id.toString());
+      } else if (adSpaceList && typeof adSpaceList === 'object') {
+        // 处理可能的其他格式
+        console.log(`[${requestId}] 广告位列表格式:`, adSpaceList);
+        // 如果返回的是对象，可能需要进一步处理
+        adSpaceIds = [];
+      }
+    } catch (error) {
+      console.log(`[${requestId}] 开发者 ${developerAddress} 不在game_devs列表中或没有广告位:`, error);
+      return [];
+    }
+
+    console.log(`[${requestId}] 从Factory获取到开发者的广告位ID列表:`, adSpaceIds);
+    return adSpaceIds;
+  } catch (error) {
+    console.error('获取开发者广告位列表失败:', error);
     return [];
   }
 }
